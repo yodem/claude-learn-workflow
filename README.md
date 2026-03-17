@@ -45,13 +45,7 @@ https://github.com/yodem/claude-learn-workflow
 <details>
 <summary>Click to expand manual steps</summary>
 
-### Prerequisites
-
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
-- API keys for:
-  - **Tavily** — [tavily.com](https://tavily.com)
-  - **Exa** — [exa.ai](https://exa.ai)
-  - **NotebookLM MCP** — `notebooklm-mcp` server (optional)
+See [Prerequisites](#prerequisites) above for required API keys and tools.
 
 ### Step 1: Install the skill
 
@@ -171,7 +165,7 @@ Generates a standalone HTML file with interactive controls (sliders, toggles, ta
 /learn-toolkit:learn <topic>
 ```
 
-The full learning workflow that combines all three steps. Researches a topic across Tavily, Exa, and web search in parallel, then generates:
+The full learning workflow that combines all three steps. Researches a topic across Tavily and Exa in parallel, optionally reads from your CandleKeep library, then generates:
 
 1. **ASCII diagram** in the terminal (architecture, flowchart, or comparison table)
 2. **Interactive playground** in the browser (parameter explorer, decision matrix, or comparison tool)
@@ -183,30 +177,107 @@ The full learning workflow that combines all three steps. Researches a topic acr
 /learn-toolkit:learn Next.js App Router --language en
 ```
 
-**Requires API keys** for Tavily/Exa (optional — falls back to WebSearch) and NotebookLM MCP (optional — skips artifact generation without it).
+**Requires API keys** for Tavily/Exa and NotebookLM MCP (workflow stops with setup instructions if missing). **Optional:** CandleKeep (`ck` CLI) for library read/write integration.
 
 #### /learn Pipeline
 
 ```
+Phase 0: Discover tools               Phase 0.5: CandleKeep scan (optional)
+  ├── Tavily MCP or CLI?         ->     ├── ck items list --json
+  ├── Exa MCP?                   ->     ├── Match titles to topic
+  ├── NotebookLM MCP?            ->     └── Read up to 3 matching items
+  └── CandleKeep CLI?
+
 Phase 1: Research (parallel)          Phase 2: Organize
   ├── Tavily MCP or CLI          ->     ├── Deduplicate URLs
-  ├── Exa (web + code search)    ->     ├── Categorize sources
-  └── WebSearch (fallback)       ->     └── Create research summary
+  └── Exa (web + code search)   ->     ├── Categorize (docs > library > tutorials > articles)
+                                        └── Create research summary
 
-Phase 3: NotebookLM                   Phase 4: Generate (parallel)
-  ├── Create notebook(s)         ->     ├── Hebrew podcast (deep dive)
-  ├── Add URLs as sources        ->     ├── Bento-grid infographic
-  ├── Add research summary       ->     ├── Mind map
-  └── Overflow -> new notebook   ->     ├── Flashcards
-                                        └── Implementation study guide
+Phase 2.5: Save local MD files        Phase 3: NotebookLM
+  ├── /tmp/learn-<slug>/         ->     ├── Create notebook(s)
+  ├── README.md + summary        ->     ├── Add CandleKeep text sources
+  └── sources/ (by category)     ->     ├── Add URL sources
+                                        ├── Add research summary
+                                        └── Overflow -> new notebook
 
-Phase 5: 3-Step Integration
+Phase 4: Generate (parallel)          Phase 5: Poll + Report
+  ├── Hebrew podcast (deep dive) ->     └── Summary table with all artifacts
+  ├── Bento-grid infographic
+  ├── Mind map                   Phase 5.5: Write to CandleKeep (--ck-write)
+  ├── Flashcards                   ├── Compile book.md
+  └── Implementation study guide   └── ck items create + put
+
+Phase 6: 3-Step Integration
   ├── Step 1: ASCII diagram in terminal (architecture/flow/comparison)
   ├── Step 2: Interactive HTML playground in browser
-  └── Step 3: NotebookLM summary with all artifacts
+  └── Step 3: NotebookLM + CandleKeep + local files summary
 ```
 
 NotebookLM allows up to **50 sources per notebook**. Overflow automatically creates additional notebooks.
+
+## Prerequisites
+
+The `/learn-toolkit:visualize` and `/learn-toolkit:playground` skills work immediately — no setup needed.
+
+The `/learn-toolkit:learn` skill requires three backends and supports one optional integration:
+
+### 1. Tavily (required) — Web Search
+
+Tavily provides LLM-optimized web search and content extraction.
+
+**Option A: Tavily CLI (recommended)**
+```bash
+curl -fsSL https://cli.tavily.com/install.sh | bash
+tvly login                                        # opens browser for OAuth
+# or: tvly login --api-key tvly-YOUR_KEY
+```
+
+Optionally install agent skills for slash commands:
+```bash
+npx skills add tavily-ai/skills --yes
+```
+
+**Option B: Tavily MCP server**
+
+Add `export TAVILY_API_KEY="your-key"` to `~/.zshrc` (get a free key at [tavily.com](https://tavily.com)), then restart Claude Code. The plugin's `.mcp.json` picks it up automatically.
+
+### 2. Exa (required) — Code & Documentation Search
+
+Exa specializes in code-aware and documentation-focused search.
+
+Add to `~/.zshrc` (get a key at [exa.ai](https://exa.ai)):
+```bash
+export EXA_API_KEY="your-exa-key-here"
+```
+
+Then `source ~/.zshrc` and restart Claude Code.
+
+### 3. NotebookLM (required) — Learning Artifacts
+
+NotebookLM generates podcasts, infographics, mind maps, flashcards, and study guides.
+
+Install from [notebooklm-mcp](https://github.com/nicholasgriffintn/notebooklm-mcp), then authenticate:
+```bash
+nlm login
+```
+
+### 4. CandleKeep (optional) — Library Integration
+
+CandleKeep provides bidirectional library integration. If the `ck` CLI is available, `/learn` will:
+
+- **Read** (on by default): Scan your CandleKeep library for existing documents on the topic before researching. Disable with `--no-ck-read`
+- **Write** (off by default): Compile all research into a structured book and upload it to your library. Enable with `--ck-write`
+
+Install via the `candlekeep-cloud` Claude Code plugin. Once `ck` is on your PATH, `/learn` detects it automatically.
+
+```bash
+# Learn and save the research as a book to CandleKeep
+/learn-toolkit:learn Kafka event streaming --ck-write
+```
+
+The compiled book includes an executive summary, 3-5 topic-adapted chapters, and a source index. It's saved locally at `/tmp/learn-<topic>/book.md` regardless, but `--ck-write` also uploads it to your CandleKeep library as a permanent reference.
+
+If `ck` is not installed, CandleKeep phases are silently skipped — no errors, no interruptions.
 
 ## Advanced Setup Options
 
@@ -253,33 +324,35 @@ To share the skill with your team, add it to your project's `.claude/skills/` di
 
 ```bash
 # Learn a new technology
-/learn Kafka event streaming
+/learn-toolkit:learn Kafka event streaming
 
-# Learn a programming language
-/learn Rust ownership and borrowing
+# Learn a framework (English output)
+/learn-toolkit:learn Next.js App Router --language en
 
-# Learn a framework
-/learn Next.js App Router and Server Components
+# Learn and save research as a book to CandleKeep
+/learn-toolkit:learn Rust ownership and borrowing --ck-write
 
-# Learn a concept
-/learn distributed consensus algorithms
-
-# Override language (default is Hebrew)
-/learn GraphQL federation --language en
+# Skip CandleKeep library scan
+/learn-toolkit:learn distributed consensus algorithms --no-ck-read
 ```
 
 ## Output
 
 ```
-## Learning Package: Kafka Event Streaming
+## Complete Learning Package: Kafka Event Streaming
 
-### Notebooks
+### Step 1: Quick Visual (Terminal)
+[ASCII architecture diagram of Kafka clusters, topics, partitions]
+
+### Step 2: Interactive Explorer (Browser)
+File: /tmp/playground-kafka-event-streaming.html
+
+### Step 3: Deep Learning (NotebookLM)
 | # | Notebook                     | Sources | Link        |
 |---|------------------------------|---------|-------------|
 | 1 | Kafka - Core Learning        | 28      | [Open](url) |
 | 2 | Kafka - Deep Dive            | 15      | [Open](url) |
 
-### Artifacts
 | Notebook | Type        | Status | Title                       |
 |----------|-------------|--------|-----------------------------|
 | Core     | Podcast     | Done   | יסודות קפקא ועיבוד אירועים |
@@ -287,6 +360,15 @@ To share the skill with your team, add it to your project's `.claude/skills/` di
 | Core     | Mind Map    | Done   | עולם קפקא - מפת מושגים     |
 | Core     | Flashcards  | Done   | 12 כרטיסיות למידה           |
 | Core     | Study Guide | Done   | מדריך יישום קפקא            |
+
+### CandleKeep
+| Direction | Items | Details                                    |
+|-----------|-------|--------------------------------------------|
+| Read      | 2     | "Kafka Basics", "Event-Driven Architecture"|
+| Write     | 1     | Item #42 - "Kafka - Research Compendium"   |
+
+### Local Files
+Research saved to: /tmp/learn-kafka-event-streaming/
 ```
 
 ## Configuration
@@ -301,9 +383,10 @@ Tavily (MCP or CLI) and Exa are required. The workflow checks for them at startu
 
 | Available | Behavior |
 |-----------|----------|
-| Tavily MCP + Exa | Full coverage via MCP (best) |
-| Tavily CLI + Exa | CLI for Tavily, MCP for Exa |
-| Missing Tavily or Exa | Workflow stops with setup instructions |
+| Tavily MCP + Exa + NotebookLM | Full coverage via MCP (best) |
+| Tavily CLI + Exa + NotebookLM | CLI for Tavily, MCP for Exa |
+| + CandleKeep (`ck` CLI) | Scans library for existing knowledge, optionally writes book back |
+| Missing Tavily, Exa, or NotebookLM | Workflow stops with setup instructions |
 
 ### Artifact Types
 
@@ -337,7 +420,8 @@ claude-learn-workflow/
 │       ├── SKILL.md                          # Step 3: Deep learning
 │       └── references/
 │           ├── notebooklm-loading.md         # Notebook overflow logic
-│           └── artifact-generation.md        # NotebookLM tool signatures
+│           ├── artifact-generation.md        # NotebookLM tool signatures
+│           └── candlekeep-integration.md     # CandleKeep read/write reference
 └── .gitignore
 ```
 

@@ -19,7 +19,7 @@ claude plugin install learn-toolkit@learn-toolkit-marketplace
 This installs all 3 skills and configures MCP servers automatically:
 - `/learn-toolkit:visualize` — ASCII diagrams in terminal (no config needed)
 - `/learn-toolkit:playground` — Interactive HTML explorer (no config needed)
-- `/learn-toolkit:learn` — Tavily + Exa research into NotebookLM packages
+- `/learn-toolkit:learn` — Tavily + Exa research into NotebookLM packages, with optional CandleKeep library integration
 
 ### Step 2: Set up API keys for /learn (optional)
 
@@ -86,6 +86,14 @@ If the user wants podcast/infographic generation:
 - Check if they have `notebooklm-mcp` installed
 - If not: "NotebookLM is optional. `/learn-toolkit:learn` will still research your topic — it just won't generate podcasts, infographics, and flashcards. Add it later from https://github.com/nicholasgriffintn/notebooklm-mcp"
 
+### Step 3b: CandleKeep (optional)
+
+If the user has `candlekeep-cloud` installed (with the `ck` CLI available), `/learn-toolkit:learn` will automatically:
+- **Read** from their CandleKeep library for existing knowledge on the topic (on by default, disable with `--no-ck-read`)
+- **Write** a compiled research book back to CandleKeep (off by default, enable with `--ck-write`)
+
+CandleKeep is never required — the workflow skips it silently if `ck` is not installed.
+
 ### Step 4: Confirm
 
 Tell the user:
@@ -99,6 +107,7 @@ Plugin **learn-toolkit** installed. Here's what you have:
 | ASCII Visualizer | `/learn-toolkit:visualize <concept>` | Yes |
 | Interactive Playground | `/learn-toolkit:playground <topic>` | Yes |
 | Deep Learning | `/learn-toolkit:learn <topic>` | After setting env vars + restart |
+| CandleKeep (optional) | `--ck-write` to save, `--no-ck-read` to skip | If `ck` CLI installed |
 | Tavily Agent Skills | `/tavily-search`, `/tavily-research`, `tvly` CLI | After Step 2b (`npx skills add` + `tvly login`) |
 
 **Try now (no restart needed):**
@@ -123,6 +132,7 @@ tvly crawl "https://docs.example.com" --output-dir ./docs/
 - Quick concept, stay in terminal -> `/learn-toolkit:visualize`
 - Compare options, explore interactively -> `/learn-toolkit:playground`
 - Deep dive, new technology, team materials -> `/learn-toolkit:learn`
+- Deep dive + save to library -> `/learn-toolkit:learn <topic> --ck-write`
 - Direct web search/extract/crawl -> `/tavily-search`, `/tavily-extract`, `/tavily-crawl`
 - Comprehensive research with citations -> `/tavily-research`
 

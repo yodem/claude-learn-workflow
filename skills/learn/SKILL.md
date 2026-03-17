@@ -1,15 +1,15 @@
 ---
 name: learn
-description: "Deep learning workflow: research a topic via Tavily + Exa, then generate a full NotebookLM learning package (podcast, infographic, mind map, flashcards). Use when the user wants to learn a new technology, framework, language, or concept in depth. Triggers: /learn, 'learn about', 'research and create', 'deep dive into', 'create a learning package'. Do NOT use for simple web searches or quick questions."
+description: "Deep Learning Workflow: Tavily + Exa research into NotebookLM learning package with CandleKeep library integration (podcast, infographic, flashcards). Use for deep dives into new technologies, frameworks, or concepts."
 argument-hint: "<topic>"
 disable-model-invocation: true
-allowed-tools: Bash(tvly *)
+allowed-tools: Bash(tvly *), Bash(ck *)
 metadata:
   author: Yotam Fromm
-  version: 1.4.0
+  version: 1.5.0
   mcp-server: tavily, exa, notebooklm-mcp
   category: learning
-  tags: [research, notebooklm, tavily, exa, podcast, flashcards]
+  tags: [research, notebooklm, tavily, exa, podcast, flashcards, candlekeep]
 ---
 
 # Learn Workflow
@@ -66,10 +66,18 @@ Set flags based on results:
 - `HAS_EXA` = true if `mcp__exa__web_search_exa` was found
 - `HAS_NOTEBOOKLM` = true if NotebookLM tools were found
 
+#### Step 0c: Check CandleKeep CLI
+
+```bash
+ck --version 2>/dev/null && echo "CK_CLI=true" || echo "CK_CLI=false"
+```
+
+Set `HAS_CANDLEKEEP = true/false`. CandleKeep missing is **not** an error — just note it and continue.
+
 **Tell the user which backends are available:**
 
 ```
-Research backends: [Tavily MCP ✓/✗] [Tavily Skills/CLI ✓/✗] [Exa ✓/✗] [WebSearch ✓ (built-in)]
+Research backends: [Tavily MCP ✓/✗] [Tavily Skills/CLI ✓/✗] [Exa ✓/✗] [CandleKeep ✓/✗]
 NotebookLM: [✓/✗]
 ```
 
@@ -110,6 +118,21 @@ After showing the missing tools, end with:
 
 **Verification gate:** ALL three backends must be available: Tavily ✓ (MCP or CLI), Exa ✓, NotebookLM ✓. If any are missing, the workflow STOPS here with setup instructions. Do NOT continue.
 
+### Phase 0.5: CandleKeep Library Scan
+
+**Condition:** `HAS_CANDLEKEEP = true` AND no `--no-ck-read` flag. Skip this phase entirely otherwise.
+
+Consult `${CLAUDE_SKILL_DIR}/references/candlekeep-integration.md` for detailed library scan logic and `ck` command patterns.
+
+1. `ck items list --json` — scan titles/descriptions for topic overlap with `$ARGUMENTS`
+2. For matching items (max 3): `ck items toc <id>`, then `ck items read "id:<relevant-pages>"`
+3. Store as `ck_sources[]` with `{id, title, content_snippet}`
+4. Report: "Found X relevant documents in CandleKeep: [titles]" or "No relevant library documents found"
+
+CandleKeep content is available as context for Phase 1 — use it to refine search queries (skip basics already covered in library).
+
+**Verification gate:** Library scanned (even if 0 matches). Proceed regardless.
+
 ### Phase 1: Parallel Research
 
 Research **$ARGUMENTS** across all **available** backends simultaneously. Only use backends where the corresponding flag from Phase 0 is true.
@@ -138,14 +161,40 @@ If both MCP and skills are available, use MCP for search and `tvly` CLI for extr
 ### Phase 2: Organize and Verify
 
 1. Deduplicate URLs across all backends
-2. Categorize: official docs > tutorials > blog posts > code repos > comparisons
-3. Write a 500-word research summary synthesizing key findings from search result snippets and any fetched content
-4. Save state:
+2. Categorize: official docs > **library (CandleKeep)** > tutorials > blog posts > code repos > comparisons
+3. If CandleKeep sources exist from Phase 0.5, list them under a "Library Sources" heading in the research summary
+4. Write a 500-word research summary synthesizing key findings from search result snippets, any fetched content, and CandleKeep library content
+5. Save state (substitute `$TOPIC_SLUG` with the actual slug — topic lowercased, spaces to hyphens, special chars removed):
 ```bash
-echo '{"topic":"...","notebooks":[],"total_sources":0}' > /tmp/learn-workflow-state.json
+echo "{\"topic\":\"$ARGUMENTS\",\"notebooks\":[],\"total_sources\":0,\"candlekeep\":{\"read_ids\":[],\"write_id\":null},\"local_path\":\"/tmp/learn-$TOPIC_SLUG/\"}" > /tmp/learn-workflow-state.json
 ```
 
 **Verification gate:** State file written successfully. Research summary covers at least 3 distinct subtopics. If not, return to Phase 1 with refined queries.
+
+### Phase 2.5: Save Local MD Files
+
+Always runs (not CandleKeep-specific). Save all research to `/tmp/learn-<topic-slug>/`:
+
+```
+/tmp/learn-<topic-slug>/
+  README.md              — index with TOC, metadata, date
+  research-summary.md    — 500-word synthesis
+  sources/
+    01-official-docs.md
+    02-library.md         — CandleKeep sources (if any)
+    03-tutorials.md
+    04-articles.md
+```
+
+Each source file contains: URL/source identifier, title, backend that provided it, and content snippet. The `topic-slug` is the topic lowercased, spaces replaced with hyphens, special chars removed.
+
+Consult `${CLAUDE_SKILL_DIR}/references/candlekeep-integration.md` for file structure details.
+
+Report path to user: `"Research saved to /tmp/learn-<topic-slug>/"`
+
+Note: If `--ck-write` is set, `book.md` will be added to this directory later in Phase 5.5.
+
+**Verification gate:** Directory created, `README.md` and `research-summary.md` exist.
 
 ### Phase 3: Load into NotebookLM
 
@@ -154,10 +203,11 @@ IMPORTANT: Max 50 sources per notebook. Track the count. Overflow creates a new 
 Consult `${CLAUDE_SKILL_DIR}/references/notebooklm-loading.md` for notebook creation strategy, source addition patterns, and overflow handling.
 
 1. Create notebook: `mcp__notebooklm-mcp__notebook_create(title="[Topic] - Core Learning")`
-2. Add all URL sources with `wait=false` (non-blocking)
-3. Add research summary text source with `wait=true` (blocking)
-4. Update state file with notebook ID and source count after each addition
-5. If source count reaches 48, create overflow notebook and continue
+2. If CandleKeep sources exist (`ck_sources[]` from Phase 0.5), add them as text sources with `wait=false` (before URLs). Use title `"Library: [Item Title]"`. Max 3 items = negligible impact on 50-source limit
+3. Add all URL sources with `wait=false` (non-blocking)
+4. Add research summary text source with `wait=true` (blocking)
+5. Update state file with notebook ID, source count, and `candlekeep.read_ids` after each addition
+6. If source count reaches 48, create overflow notebook and continue
 
 **Verification gate:** Run `mcp__notebooklm-mcp__studio_status` and confirm all sources show `status: "ready"` or `"completed"`. If sources are still processing, wait 10 seconds and check again (max 3 retries).
 
@@ -202,6 +252,22 @@ Present final summary to user:
 ```
 
 **Verification gate:** Summary table includes at least 1 notebook and 5 artifacts. All artifact statuses are reported (completed or failed, not in_progress).
+
+### Phase 5.5: Write to CandleKeep
+
+**Condition:** `HAS_CANDLEKEEP = true` AND `--ck-write` flag present. Skip this phase entirely otherwise.
+
+Consult `${CLAUDE_SKILL_DIR}/references/candlekeep-integration.md` for book compilation template and `ck` command patterns.
+
+1. Compile book from all research into `/tmp/learn-<topic-slug>/book.md` — includes executive summary, 3-5 chapters adapted to the topic, and source index appendix
+2. `ck items create "[Topic] - Research Compendium" --description "Auto-generated research compendium on [Topic]. Created by learn-toolkit on [date]." --no-session`
+3. `ck items put <id> --file /tmp/learn-<topic-slug>/book.md --no-session`
+4. Update state file with `candlekeep.write_id`
+5. Report: `"Research book uploaded to CandleKeep (item #ID)"`
+
+If `ck items create` or `ck items put` fails, warn user and continue — the compiled `book.md` is still available in `/tmp`.
+
+**Verification gate:** Book file exists at `/tmp/learn-<topic-slug>/book.md`. If `--ck-write` was set, CandleKeep item was created (or failure was reported).
 
 ### Phase 6: Generate Companion Visualizations (3-Step Integration)
 
@@ -254,8 +320,19 @@ File: /tmp/playground-<topic-slug>.html (opened in browser)
 | Notebook | Type | Status | Title |
 |----------|------|--------|-------|
 
+### CandleKeep
+| Direction | Items | Details |
+|-----------|-------|---------|
+| Read      | X     | "Doc A", "Doc B", "Doc C" |
+| Write     | X     | Item #ID - "[Topic] - Research Compendium" |
+
+(Omit this section entirely if HAS_CANDLEKEEP = false)
+
+### Local Files
+Research saved to: /tmp/learn-<topic-slug>/
+
 ### Research Summary
-- X official docs, X tutorials, X articles, X repos
+- X official docs, X library sources, X tutorials, X articles, X repos
 - Total unique sources: X
 ```
 
@@ -342,3 +419,7 @@ Result: English-language learning package
 | Source limit (50) hit | Too many sources | Create new notebook with next-tier name, continue adding |
 | Studio generation fails | NotebookLM internal error | Retry once. If still fails, report in summary table as "Failed" |
 | State file write fails | /tmp permission issue | Continue without state tracking, use in-memory counting |
+| `ck` not found | CLI not installed | `HAS_CANDLEKEEP = false`, skip silently |
+| `ck items list` fails | Auth issue | Warn user, set `HAS_CANDLEKEEP = false`, continue |
+| `ck items read` fails | Bad item | Skip that item, continue with remaining |
+| `ck items create/put` fails | Permission issue | Warn, skip write, `book.md` still in `/tmp` |

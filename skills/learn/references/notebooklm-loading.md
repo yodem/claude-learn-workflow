@@ -67,7 +67,12 @@ After all sources added:
       "source_count": 0
     }
   ],
-  "total_sources": 0
+  "total_sources": 0,
+  "candlekeep": {
+    "read_ids": [],
+    "write_id": null
+  },
+  "local_path": "/tmp/learn-<topic-slug>/"
 }
 ```
 
