@@ -1,6 +1,8 @@
 # /learn — Deep Learning Workflow for Claude Code
 
-A Claude Code slash command that chains **Tavily**, **Exa**, and **NotebookLM** into an automated learning pipeline. Give it a topic, get back a full learning package: podcast, infographic, mind map, and flashcards.
+A Claude Code **skill** that chains **Tavily**, **Exa**, and **NotebookLM** into an automated learning pipeline. Give it a topic, get back a full learning package: podcast, infographic, mind map, and flashcards.
+
+Built following [Claude Code best practices](https://docs.anthropic.com/en/docs/claude-code) — proper skill structure with YAML frontmatter, progressive disclosure via `references/`, explicit error recovery, and graceful MCP fallbacks.
 
 ## How It Works
 
@@ -10,15 +12,15 @@ A Claude Code slash command that chains **Tavily**, **Exa**, and **NotebookLM** 
 
 ```
 Phase 1: Research (parallel)          Phase 2: Organize
-  ├── Tavily (advanced search)   →      ├── Deduplicate URLs
-  ├── Exa (web + code search)    →      ├── Categorize sources
-  └── WebSearch (fallback)       →      └── Create research summary
+  ├── Tavily (advanced search)   ->     ├── Deduplicate URLs
+  ├── Exa (web + code search)    ->     ├── Categorize sources
+  └── WebSearch (fallback)       ->     └── Create research summary
 
 Phase 3: NotebookLM                   Phase 4: Generate (parallel)
-  ├── Create notebook(s)         →      ├── Hebrew podcast (deep dive)
-  ├── Add URLs as sources        →      ├── Bento-grid infographic
-  ├── Add research summary       →      ├── Mind map
-  └── Overflow → new notebook    →      └── Flashcards
+  ├── Create notebook(s)         ->     ├── Hebrew podcast (deep dive)
+  ├── Add URLs as sources        ->     ├── Bento-grid infographic
+  ├── Add research summary       ->     ├── Mind map
+  └── Overflow -> new notebook   ->     └── Flashcards
 
 Phase 5: Poll & Report
   └── Final summary table with notebook links and artifact status
@@ -31,35 +33,41 @@ NotebookLM allows up to **50 sources per notebook**. When the limit is reached, 
 | Notebook | Contents |
 |----------|----------|
 | `[Topic] - Core Learning` | Official docs, tutorials, main articles |
-| `[Topic] - Deep Dive & Examples` | Code examples, comparisons, advanced content |
-| `[Topic] - Community & Alternatives` | Blog posts, discussions, alternatives |
+| `[Topic] - Deep Dive` | Code examples, comparisons, advanced content |
+| `[Topic] - Community` | Blog posts, discussions, alternatives |
 
 ## Setup
 
 ### Prerequisites
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and working
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
 - API keys for:
-  - **Tavily** — get one at [tavily.com](https://tavily.com)
-  - **Exa** — get one at [exa.ai](https://exa.ai)
-  - **NotebookLM MCP** — requires the `notebooklm-mcp` server (see below)
+  - **Tavily** — [tavily.com](https://tavily.com)
+  - **Exa** — [exa.ai](https://exa.ai)
+  - **NotebookLM MCP** — `notebooklm-mcp` server (see Step 3)
 
-### Step 1: Install the slash command
+### Step 1: Install the skill
 
-Copy the command file to your Claude Code commands directory:
+Claude Code uses a **skills** system (`.claude/skills/<name>/SKILL.md`) with YAML frontmatter for discoverability. The older `commands/` directory also works but skills take precedence.
 
 ```bash
-# Global (available in all projects)
-cp commands/learn.md ~/.claude/commands/learn.md
+# Option A: Personal skill (available in all your projects)
+mkdir -p ~/.claude/skills/learn/references
+cp skills/learn/SKILL.md ~/.claude/skills/learn/SKILL.md
+cp skills/learn/references/*.md ~/.claude/skills/learn/references/
 
-# Or project-level (available only in current project)
-mkdir -p .claude/commands
-cp commands/learn.md .claude/commands/learn.md
+# Option B: Project skill (available only in current project, committable)
+mkdir -p .claude/skills/learn/references
+cp skills/learn/SKILL.md .claude/skills/learn/SKILL.md
+cp skills/learn/references/*.md .claude/skills/learn/references/
+
+# Option C: Legacy command (still works, simpler but less discoverable)
+cp commands/learn.md ~/.claude/commands/learn.md
 ```
 
 ### Step 2: Configure MCP servers
 
-Add the following to your `~/.claude/settings.json` under `"mcpServers"`:
+Add to `~/.claude/settings.json` under `"mcpServers"`:
 
 ```json
 {
@@ -78,40 +86,57 @@ Add the following to your `~/.claude/settings.json` under `"mcpServers"`:
 
 Replace `YOUR_TAVILY_API_KEY` and `YOUR_EXA_API_KEY` with your actual keys.
 
+**MCP server scoping** (choose based on your needs):
+
+| Scope | Where | Use case |
+|-------|-------|----------|
+| User (recommended) | `~/.claude/settings.json` | Available in all projects |
+| Project | `.mcp.json` in project root | Shared with team via git |
+| Local | `.claude/settings.local.json` | Per-machine, gitignored |
+
+When servers share the same name across scopes, local wins over project, project wins over user.
+
+**Environment variable support**: `.mcp.json` supports `${VAR}` and `${VAR:-default}` syntax for API keys, so you can commit the config without hardcoding secrets:
+
+```json
+{
+  "mcpServers": {
+    "tavily": {
+      "type": "url",
+      "url": "https://mcp.tavily.com/mcp/?tavilyApiKey=${TAVILY_API_KEY}"
+    }
+  }
+}
+```
+
 ### Step 3: Install NotebookLM MCP
 
-The NotebookLM MCP server connects to Google's NotebookLM. Install it following the [notebooklm-mcp docs](https://github.com/nicholasgriffintn/notebooklm-mcp).
-
-After installation, authenticate:
+Install and authenticate the NotebookLM MCP server:
 
 ```bash
+# Install (see https://github.com/nicholasgriffintn/notebooklm-mcp)
+# Then authenticate:
 nlm login
 ```
 
 ### Step 4: Restart Claude Code
 
-MCP servers load at session start. Restart Claude Code for the new servers to connect:
+MCP servers load at session start:
 
 ```bash
-# Exit current session
 /exit
-
-# Relaunch
 claude
 ```
 
 ### Step 5: Verify
 
-Check that all three MCP servers are connected:
-
-```bash
-# In Claude Code, try:
+```
 /learn React Server Components
 ```
 
-You should see parallel research happening across Tavily and Exa, followed by NotebookLM notebook creation.
+You should see parallel research across Tavily and Exa, followed by NotebookLM notebook creation and artifact generation.
 
-## Usage Examples
+## Usage
 
 ```bash
 # Learn a new technology
@@ -126,77 +151,86 @@ You should see parallel research happening across Tavily and Exa, followed by No
 # Learn a concept
 /learn distributed consensus algorithms
 
-# Learn with language override (default is Hebrew)
+# Override language (default is Hebrew)
 /learn GraphQL federation --language en
 ```
 
 ## Output
 
-The workflow produces a final summary like:
-
 ```
 ## Learning Package: Kafka Event Streaming
 
-### Notebooks Created
-| # | Notebook                          | Sources | Link          |
-|---|-----------------------------------|---------|---------------|
-| 1 | Kafka - Core Learning             | 28      | [Open](url)   |
-| 2 | Kafka - Deep Dive & Examples      | 15      | [Open](url)   |
+### Notebooks
+| # | Notebook                     | Sources | Link        |
+|---|------------------------------|---------|-------------|
+| 1 | Kafka - Core Learning        | 28      | [Open](url) |
+| 2 | Kafka - Deep Dive            | 15      | [Open](url) |
 
-### Artifacts Generated
-| Notebook | Type        | Status | Title                            |
-|----------|-------------|--------|----------------------------------|
-| Core     | Podcast     | Done   | יסודות קפקא ועיבוד אירועים      |
-| Core     | Infographic | Done   | ארכיטקטורת קפקא בתמונה אחת      |
-| Core     | Mind Map    | Done   | עולם קפקא - מפת מושגים          |
-| Core     | Flashcards  | Done   | 12 כרטיסיות למידה                |
+### Artifacts
+| Notebook | Type        | Status | Title                       |
+|----------|-------------|--------|-----------------------------|
+| Core     | Podcast     | Done   | יסודות קפקא ועיבוד אירועים |
+| Core     | Infographic | Done   | ארכיטקטורת קפקא             |
+| Core     | Mind Map    | Done   | עולם קפקא - מפת מושגים     |
+| Core     | Flashcards  | Done   | 12 כרטיסיות למידה           |
 ```
 
 ## Configuration
 
 ### Language
 
-By default, all NotebookLM artifacts are generated in **Hebrew**. To change:
+Default: **Hebrew** (`he`). Override per-invocation or edit `SKILL.md`.
 
-- Pass `--language en` (or any BCP-47 code) in your `/learn` invocation
-- Or edit `learn.md` and change the default `language` parameter
+### Research Backends
 
-### Research Depth
+All three run in parallel with graceful fallback:
 
-The workflow uses all three research backends in parallel. If one is unavailable, it gracefully falls back:
-
-| Backend Available | Behavior |
-|-------------------|----------|
-| Tavily + Exa + WebSearch | Full parallel research (best coverage) |
-| Tavily + WebSearch | Tavily primary, WebSearch supplement |
-| Exa + WebSearch | Exa primary, WebSearch supplement |
-| WebSearch only | Built-in search (still works, less depth) |
+| Available | Behavior |
+|-----------|----------|
+| Tavily + Exa + WebSearch | Full coverage (best) |
+| Tavily + WebSearch | Tavily primary |
+| Exa + WebSearch | Exa primary |
+| WebSearch only | Built-in only (reduced depth) |
 
 ### Artifact Types
 
-Edit `learn.md` to customize which artifacts are generated. Available types:
+Default: podcast + infographic + mind map + flashcards. Additional types available in `references/artifact-generation.md`:
 
-| Type | Parameter | Options |
-|------|-----------|---------|
-| Audio | `audio_format` | `deep_dive`, `brief`, `critique`, `debate` |
-| Video | `video_format` | `explainer`, `brief`, `cinematic` |
-| Infographic | `infographic_style` | `bento_grid`, `sketch_note`, `professional`, `editorial` |
-| Slides | `slide_format` | `detailed_deck`, `presenter_slides` |
-| Report | `report_format` | `Briefing Doc`, `Study Guide`, `Blog Post` |
-| Flashcards | `difficulty` | `easy`, `medium`, `hard` |
-| Quiz | `question_count` | any integer |
-| Mind Map | — | auto-generated |
+| Type | Options |
+|------|---------|
+| Audio | `deep_dive`, `brief`, `critique`, `debate` |
+| Infographic | `bento_grid`, `sketch_note`, `professional`, `editorial` |
+| Video | `explainer`, `brief`, `cinematic` |
+| Slides | `detailed_deck`, `presenter_slides` |
+| Report | `Briefing Doc`, `Study Guide`, `Blog Post` |
 
 ## File Structure
 
 ```
 claude-learn-workflow/
-├── README.md              # This file
+├── README.md
+├── LICENSE
+├── skills/
+│   └── learn/
+│       ├── SKILL.md                          # Main skill (install this)
+│       └── references/
+│           ├── notebooklm-loading.md         # Notebook creation & overflow
+│           └── artifact-generation.md        # Tool call signatures
 ├── commands/
-│   └── learn.md           # The slash command (copy to ~/.claude/commands/)
+│   └── learn.md                              # Legacy command (alternative)
 └── examples/
-    └── settings-snippet.json  # MCP server config to merge into settings.json
+    └── settings-snippet.json                 # MCP config template
 ```
+
+### Why skills over commands?
+
+| Feature | Commands (`~/.claude/commands/`) | Skills (`~/.claude/skills/`) |
+|---------|----------------------------------|------------------------------|
+| YAML frontmatter | No | Yes (name, description, triggers) |
+| Auto-discovery | By name only | By description + trigger patterns |
+| Progressive disclosure | Flat file | SKILL.md + references/ directory |
+| Precedence | Lower | Higher (skills win on name collision) |
+| Monorepo support | No | Yes (nested `.claude/skills/` dirs) |
 
 ## Context: The 3-Step Learning Framework
 
@@ -204,8 +238,8 @@ This tool implements **Step 3** of a developer learning framework:
 
 | Step | Tool | Environment | When to Use |
 |------|------|-------------|-------------|
-| 1 | ASCII Visualizer | Terminal | Quick concept, don't want to leave CLI |
-| 2 | Playground (HTML) | Browser | Compare alternatives, interactive exploration |
+| 1 | ASCII Visualizer | Terminal | Quick concept, stay in CLI |
+| 2 | Playground (HTML) | Browser | Compare alternatives, interactive |
 | **3** | **NotebookLM + /learn** | **Web / MCP** | **Deep learning, new tech, team materials** |
 
 ## License
