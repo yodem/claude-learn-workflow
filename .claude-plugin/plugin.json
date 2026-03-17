@@ -6,8 +6,8 @@
     "name": "Yotam Fromm",
     "url": "https://github.com/yodem"
   },
-  "homepage": "https://github.com/yodem/claude-learn-workflow",
-  "repository": "https://github.com/yodem/claude-learn-workflow",
+  "homepage": "https://github.com/yodem/learn-toolkit",
+  "repository": "https://github.com/yodem/learn-toolkit",
   "license": "MIT",
   "keywords": ["learning", "visualization", "notebooklm", "tavily", "exa", "podcast", "flashcards", "ascii", "playground"]
 }

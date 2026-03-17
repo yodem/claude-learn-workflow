@@ -7,7 +7,7 @@ This repository is a **Claude Code plugin**. When a user shares this repo URL, g
 ### Step 1: Add the marketplace and install the plugin
 
 ```
-/plugin marketplace add yodem/claude-learn-workflow
+/plugin marketplace add yodem/learn-toolkit
 /plugin install learn-toolkit@learn-toolkit-marketplace
 ```
 

@@ -13,7 +13,7 @@ A 3-skill toolkit for learning new technologies without leaving your workflow. E
 ### Option A: Plugin install (recommended)
 
 ```
-/plugin marketplace add yodem/claude-learn-workflow
+/plugin marketplace add yodem/learn-toolkit
 /plugin install learn-toolkit@learn-toolkit-marketplace
 ```
 
@@ -35,7 +35,7 @@ Restart Claude Code. Done.
 Paste this URL into Claude Code and it reads `CLAUDE.md` to walk you through setup:
 
 ```
-https://github.com/yodem/claude-learn-workflow
+https://github.com/yodem/learn-toolkit
 ```
 
 > Also works with Cursor, Windsurf, and other AI tools that read `CLAUDE.md`.
@@ -403,7 +403,7 @@ Default: podcast + infographic + mind map + flashcards + **study guide** (implem
 ## File Structure
 
 ```
-claude-learn-workflow/
+learn-toolkit/
 ├── .claude-plugin/
 │   ├── plugin.json                           # Plugin manifest (name, version, metadata)
 │   └── marketplace.json                      # Marketplace catalog for /plugin install
