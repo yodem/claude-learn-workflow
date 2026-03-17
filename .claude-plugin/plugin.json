@@ -1,7 +1,7 @@
 {
   "name": "learn-toolkit",
-  "version": "1.3.0",
-  "description": "3-step learning toolkit: /visualize (ASCII diagrams in terminal), /playground (interactive HTML explorer), /learn (Tavily + Exa research into NotebookLM learning packages). Now with Tavily agent skills integration (search, extract, crawl, map, research via CLI).",
+  "version": "1.4.0",
+  "description": "3-step learning toolkit: /visualize (ASCII diagrams), /playground (interactive HTML), /learn (combines all 3 steps + NotebookLM with study guide). Tavily agent skills integration for search, extract, crawl, research via CLI.",
   "author": {
     "name": "Yotam Fromm",
     "url": "https://github.com/yodem"

@@ -6,7 +6,7 @@ disable-model-invocation: true
 allowed-tools: Bash(tvly *)
 metadata:
   author: Yotam Fromm
-  version: 1.3.0
+  version: 1.4.0
   mcp-server: tavily, exa, notebooklm-mcp
   category: learning
   tags: [research, notebooklm, tavily, exa, podcast, flashcards]
@@ -173,8 +173,11 @@ Consult `${CLAUDE_SKILL_DIR}/references/artifact-generation.md` for exact tool c
 | Infographic | `infographic` | `bento_grid`, `portrait`, `language="he"` |
 | Mind Map | `mind_map` | `language="he"` |
 | Flashcards | `flashcards` | `medium`, `language="he"` |
+| Study Guide | `report` | `report_type="Study Guide"`, `language="he"`, implementation-focused `focus_prompt` |
 
-**Verification gate:** All 4 `studio_create` calls returned successfully with artifact IDs. If any failed, retry once before reporting failure.
+The Study Guide is an implementation-focused artifact that includes: key concepts summary, step-by-step implementation guide with code examples, action items checklist, common pitfalls, and recommended next steps.
+
+**Verification gate:** All 5 `studio_create` calls returned successfully with artifact IDs. If any failed, retry once before reporting failure.
 
 ### Phase 5: Poll and Report
 
@@ -198,24 +201,85 @@ Present final summary to user:
 - Total unique sources: X
 ```
 
-**Verification gate:** Summary table includes at least 1 notebook and 4 artifacts. All artifact statuses are reported (completed or failed, not in_progress).
+**Verification gate:** Summary table includes at least 1 notebook and 5 artifacts. All artifact statuses are reported (completed or failed, not in_progress).
+
+### Phase 6: Generate Companion Visualizations (3-Step Integration)
+
+After the NotebookLM artifacts are complete, generate the other two skill outputs using the research already gathered. This gives the user the full 3-step learning experience in one workflow.
+
+#### Step 6a: ASCII Architecture Diagram (`/visualize`)
+
+Using the research summary from Phase 2, generate an ASCII diagram directly in the terminal. Pick the most appropriate diagram type for the topic:
+
+- Architecture topics → system architecture diagram
+- Process/workflow topics → flowchart
+- Comparison topics → comparison table
+- Concept topics → mind map / hierarchy
+
+Output the diagram inline (same as `/learn-toolkit:visualize` would produce). Use Unicode box-drawing characters, keep width under 100 chars.
+
+#### Step 6b: Interactive Playground (`/playground`)
+
+Generate a standalone HTML playground file to `/tmp/playground-<topic-slug>.html` and open it in the browser. Use the research data from Phase 1-2 to populate it with accurate content.
+
+Pick the most appropriate playground type:
+- Multiple technologies/tools → side-by-side comparison with weighted scoring
+- Configuration-heavy topic → parameter explorer with sliders/toggles
+- Architecture decisions → decision matrix
+- Process topic → interactive flow explorer
+
+Design: dark theme (`#1a1a2e`), accent `#6c5ce7`, monospace for data, responsive, no external deps.
+
+```bash
+open /tmp/playground-<topic-slug>.html  # macOS
+```
+
+#### Final Output
+
+Present the complete learning package:
+
+```
+## Complete Learning Package: [Topic]
+
+### Step 1: Quick Visual (Terminal)
+[ASCII diagram rendered above]
+
+### Step 2: Interactive Explorer (Browser)
+File: /tmp/playground-<topic-slug>.html (opened in browser)
+
+### Step 3: Deep Learning (NotebookLM)
+| # | Notebook | Sources | Link |
+|---|----------|---------|------|
+
+| Notebook | Type | Status | Title |
+|----------|------|--------|-------|
+
+### Research Summary
+- X official docs, X tutorials, X articles, X repos
+- Total unique sources: X
+```
+
+**Verification gate:** All three steps produced output: ASCII diagram rendered, HTML file exists and opened, NotebookLM artifacts complete.
 
 ## Examples
 
-### Example 1: All backends available (MCP)
+### Example 1: Full 3-step learning package
 
 User says: `/learn Next.js App Router`
 
 Actions:
-1. Phase 0: `tvly --version` not found. ToolSearch finds Tavily MCP ✓, Exa ✓, NotebookLM ✓
+1. Phase 0: ToolSearch finds Tavily MCP ✓, Exa ✓, NotebookLM ✓
 2. Tavily MCP searches for "Next.js App Router" and "Next.js App Router tutorial guide 2025 2026"
 3. Exa searches for "Next.js App Router documentation" and "Next.js App Router architecture patterns"
 4. Collects 23 unique URLs, deduplicates to 19
 5. Creates "Next.js App Router - Core Learning" notebook, adds all 19 URLs + research summary
-6. Generates podcast, infographic, mind map, flashcards in Hebrew
-7. Polls until complete, presents summary table
+6. Generates podcast, infographic, mind map, flashcards, study guide in Hebrew
+7. Polls until complete
+8. **Step 1 output:** ASCII architecture diagram of App Router's file-based routing (rendered in terminal)
+9. **Step 2 output:** Interactive playground comparing Pages Router vs App Router with parameter toggles → `/tmp/playground-nextjs-app-router.html`
+10. **Step 3 output:** NotebookLM summary table with 5 artifacts
 
-Result: Learning package with 1 notebook, 19 sources, 4 artifacts
+Result: Complete learning package — ASCII diagram + interactive playground + 1 notebook, 19 sources, 5 artifacts
 
 ### Example 2: Tavily CLI only (no MCP)
 
@@ -251,9 +315,11 @@ Actions:
 1. Research yields 65 unique URLs across all backends
 2. Creates "Kubernetes - Core Learning" (48 sources)
 3. Creates "Kubernetes - Deep Dive" (17 sources + research summary)
-4. Generates 4 artifacts per notebook (8 total)
+4. Generates 5 artifacts per notebook (10 total)
+5. ASCII diagram of K8s architecture (pods, services, ingress, nodes)
+6. Interactive playground comparing deployment strategies (rolling, blue-green, canary)
 
-Result: Learning package with 2 notebooks, 65 sources, 8 artifacts
+Result: Complete learning package — ASCII diagram + playground + 2 notebooks, 65 sources, 10 artifacts
 
 ### Example 5: Language override
 

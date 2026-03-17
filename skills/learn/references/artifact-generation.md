@@ -73,6 +73,21 @@ mcp__notebooklm-mcp__studio_status(notebook_id=<id>)
 
 Poll every 30 seconds. Audio typically takes 2-4 minutes. Infographics take 1-2 minutes. Mind maps and flashcards are usually instant.
 
+### Study Guide (Action Items & Implementation)
+
+```
+mcp__notebooklm-mcp__studio_create(
+  notebook_id=<id>,
+  artifact_type="report",
+  report_type="Study Guide",
+  language="he",
+  focus_prompt="Create an implementation-focused study guide for [topic]. Include: 1) Key concepts summary, 2) Step-by-step implementation guide with code examples, 3) Action items checklist — what to build first, what to configure, what to test, 4) Common pitfalls and how to avoid them, 5) Recommended next steps after initial implementation.",
+  confirm=true
+)
+```
+
+Report types: `Briefing Doc`, `Study Guide`, `Blog Post`
+
 ## Additional Artifact Types (optional)
 
 Users can request these by modifying the skill or asking explicitly:

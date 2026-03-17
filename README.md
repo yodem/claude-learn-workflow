@@ -6,7 +6,7 @@ A 3-skill toolkit for learning new technologies without leaving your workflow. E
 |------|-------|-------------|-------------|
 | 1 | `/learn-toolkit:visualize` | Terminal | Quick flowchart or architecture diagram, stay in CLI |
 | 2 | `/learn-toolkit:playground` | Browser (HTML) | Compare alternatives, explore parameters interactively |
-| 3 | `/learn-toolkit:learn` | Web / MCP | Deep learning with podcast, infographic, mind map, flashcards |
+| 3 | `/learn-toolkit:learn` | Terminal + Browser + Web | **All 3 steps combined:** ASCII diagram + interactive playground + NotebookLM package with study guide |
 
 ## Install
 
@@ -165,13 +165,17 @@ Generates a standalone HTML file with interactive controls (sliders, toggles, ta
 
 **No API keys or MCP servers required.** Works immediately after install.
 
-### Step 3: `/learn-toolkit:learn` — Deep Learning Package via NotebookLM
+### Step 3: `/learn-toolkit:learn` — Complete Learning Package (All 3 Steps)
 
 ```
 /learn-toolkit:learn <topic>
 ```
 
-Researches a topic across Tavily, Exa, and web search in parallel, loads everything into NotebookLM, and generates a full learning package.
+The full learning workflow that combines all three steps. Researches a topic across Tavily, Exa, and web search in parallel, then generates:
+
+1. **ASCII diagram** in the terminal (architecture, flowchart, or comparison table)
+2. **Interactive playground** in the browser (parameter explorer, decision matrix, or comparison tool)
+3. **NotebookLM package** with podcast, infographic, mind map, flashcards, and **implementation study guide**
 
 ```
 /learn-toolkit:learn Kafka event streaming
@@ -185,7 +189,7 @@ Researches a topic across Tavily, Exa, and web search in parallel, loads everyth
 
 ```
 Phase 1: Research (parallel)          Phase 2: Organize
-  ├── Tavily (advanced search)   ->     ├── Deduplicate URLs
+  ├── Tavily MCP or CLI          ->     ├── Deduplicate URLs
   ├── Exa (web + code search)    ->     ├── Categorize sources
   └── WebSearch (fallback)       ->     └── Create research summary
 
@@ -193,7 +197,13 @@ Phase 3: NotebookLM                   Phase 4: Generate (parallel)
   ├── Create notebook(s)         ->     ├── Hebrew podcast (deep dive)
   ├── Add URLs as sources        ->     ├── Bento-grid infographic
   ├── Add research summary       ->     ├── Mind map
-  └── Overflow -> new notebook   ->     └── Flashcards
+  └── Overflow -> new notebook   ->     ├── Flashcards
+                                        └── Implementation study guide
+
+Phase 5: 3-Step Integration
+  ├── Step 1: ASCII diagram in terminal (architecture/flow/comparison)
+  ├── Step 2: Interactive HTML playground in browser
+  └── Step 3: NotebookLM summary with all artifacts
 ```
 
 NotebookLM allows up to **50 sources per notebook**. Overflow automatically creates additional notebooks.
@@ -297,7 +307,7 @@ All three run in parallel with graceful fallback:
 
 ### Artifact Types
 
-Default: podcast + infographic + mind map + flashcards. Additional types available in `references/artifact-generation.md`:
+Default: podcast + infographic + mind map + flashcards + **study guide** (implementation-focused with action items). Additional types available in `references/artifact-generation.md`:
 
 | Type | Options |
 |------|---------|
