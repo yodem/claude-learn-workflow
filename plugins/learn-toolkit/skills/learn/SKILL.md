@@ -1,5 +1,5 @@
 ---
-name: learn
+name: learn-toolkit:learn
 description: "Deep Learning Workflow: Tavily + Exa research into NotebookLM learning package with CandleKeep library integration (podcast, infographic, flashcards). Use for deep dives into new technologies, frameworks, or concepts."
 argument-hint: "<topic>"
 disable-model-invocation: true
