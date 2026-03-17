@@ -5,7 +5,7 @@ argument-hint: "<topic>"
 disable-model-invocation: true
 metadata:
   author: Yotam Fromm
-  version: 1.1.0
+  version: 1.2.0
   mcp-server: tavily, exa, notebooklm-mcp
   category: learning
   tags: [research, notebooklm, tavily, exa, podcast, flashcards]
@@ -46,13 +46,35 @@ Research backends: [Tavily ✓/✗] [Exa ✓/✗] [WebSearch ✓ (built-in)]
 NotebookLM: [✓/✗]
 ```
 
-If neither Tavily nor Exa is available, warn:
-> "Tavily and Exa are not configured. Using built-in WebSearch only — research depth will be more limited. To enable richer search, set TAVILY_API_KEY and/or EXA_API_KEY in your shell profile and restart Claude Code."
+**If ANY required backend is missing, STOP the workflow immediately.** Do NOT fall back to WebSearch. Do NOT proceed to Phase 1. Instead, show the user exactly what's missing and how to fix it:
 
-If NotebookLM is unavailable, warn:
-> "NotebookLM is not configured. I'll complete the research and provide a summary, but cannot generate podcasts, infographics, or flashcards."
+If Tavily is missing:
+> **Tavily is not connected.** This is likely because `TAVILY_API_KEY` is not set in your shell environment.
+>
+> To fix:
+> 1. Get a free API key at https://tavily.com
+> 2. Add `export TAVILY_API_KEY="your-key-here"` to your `~/.zshrc` (or `~/.bashrc`)
+> 3. Run `source ~/.zshrc` and **restart Claude Code**
+>
+> **Do not paste your API key in this chat.**
 
-**Verification gate:** Tool discovery completed. At least one search backend available (WebSearch is always available). Proceed with whatever backends are present.
+If Exa is missing:
+> **Exa is not connected.** This is likely because `EXA_API_KEY` is not set in your shell environment.
+>
+> To fix:
+> 1. Get an API key at https://exa.ai
+> 2. Add `export EXA_API_KEY="your-key-here"` to your `~/.zshrc` (or `~/.bashrc`)
+> 3. Run `source ~/.zshrc` and **restart Claude Code**
+>
+> **Do not paste your API key in this chat.**
+
+If NotebookLM is missing:
+> **NotebookLM is not connected.** Install it from https://github.com/nicholasgriffintn/notebooklm-mcp and run `nlm login` to authenticate.
+
+After showing the missing tools, end with:
+> Run `/learn-toolkit:learn $ARGUMENTS` again after fixing the above.
+
+**Verification gate:** ALL three backends must be available: Tavily ✓, Exa ✓, NotebookLM ✓. If any are missing, the workflow STOPS here with setup instructions. Do NOT continue.
 
 ### Phase 1: Parallel Research
 
@@ -67,16 +89,6 @@ Research **$ARGUMENTS** across all **available** backends simultaneously. Only u
 - `mcp__exa__web_search_exa(query="$ARGUMENTS documentation")`
 - `mcp__exa__web_search_exa(query="$ARGUMENTS architecture patterns examples")`
 - Crawl top 2-3 most valuable URLs via `mcp__exa__crawling_exa`
-
-**If neither Tavily nor Exa is available (WebSearch fallback):**
-- Run 4-6 diverse WebSearch queries to compensate for the lack of advanced search:
-  - `$ARGUMENTS` (main topic)
-  - `$ARGUMENTS tutorial guide` (learning resources)
-  - `$ARGUMENTS how it works explained` (fundamentals)
-  - `$ARGUMENTS vs alternatives comparison` (comparative)
-  - `$ARGUMENTS best practices architecture` (advanced)
-  - `$ARGUMENTS official documentation` (docs)
-- **IMPORTANT: Do NOT fetch individual URLs via WebFetch.** WebSearch results include snippets — use those snippets directly for the research summary. Only use WebFetch if a specific URL contains critical content not captured in snippets (limit to 2-3 fetches maximum).
 
 **Verification gate:** At least 5 unique URLs collected across all backends. If fewer, run additional queries with broader terms before proceeding.
 
@@ -93,8 +105,6 @@ echo '{"topic":"...","notebooks":[],"total_sources":0}' > /tmp/learn-workflow-st
 **Verification gate:** State file written successfully. Research summary covers at least 3 distinct subtopics. If not, return to Phase 1 with refined queries.
 
 ### Phase 3: Load into NotebookLM
-
-**Skip this phase and Phase 4-5 if HAS_NOTEBOOKLM is false.** Instead, present the research summary and URL list directly to the user and end the workflow.
 
 IMPORTANT: Max 50 sources per notebook. Track the count. Overflow creates a new notebook.
 
@@ -164,18 +174,16 @@ Actions:
 
 Result: Learning package with 1 notebook, 19 sources, 4 artifacts
 
-### Example 2: WebSearch-only fallback
+### Example 2: Missing backends — workflow stops
 
 User says: `/learn Kafka event streaming` (no Tavily/Exa configured)
 
 Actions:
-1. Phase 0: ToolSearch finds Tavily ✗, Exa ✗, NotebookLM ✓ — warns about limited search
-2. Runs 6 diverse WebSearch queries
-3. Collects URLs from search snippets — does NOT fetch each URL individually
-4. Writes research summary from snippet content
-5. Creates notebook, adds URLs + summary, generates artifacts
+1. Phase 0: ToolSearch finds Tavily ✗, Exa ✗, NotebookLM ✓
+2. Workflow STOPS — displays setup instructions for Tavily and Exa
+3. User sets env vars, restarts Claude Code, runs `/learn-toolkit:learn Kafka event streaming` again
 
-Result: Learning package with fewer but still useful sources
+Result: No research performed. User gets clear fix instructions.
 
 ### Example 3: Overflow to multiple notebooks
 
@@ -201,10 +209,9 @@ Result: English-language learning package
 
 | Error | Cause | Action |
 |-------|-------|--------|
-| Tavily MCP not found in ToolSearch | Server not configured, API key missing, or MCP not connected | Set `HAS_TAVILY=false`. Warn user. Continue with other backends |
-| Exa MCP not found in ToolSearch | Server not configured, API key missing, or MCP not connected | Set `HAS_EXA=false`. Warn user. Continue with other backends |
-| Both search MCPs unavailable | Neither configured | Use WebSearch only. Warn: "Research depth is limited to built-in search. Set TAVILY_API_KEY/EXA_API_KEY and restart for richer results." |
-| NotebookLM not found in ToolSearch | MCP not configured | Set `HAS_NOTEBOOKLM=false`. Complete research only, skip Phases 3-5 |
+| Tavily MCP not found in ToolSearch | Server not configured, API key missing, or MCP not connected | **STOP workflow.** Show Tavily setup instructions. Do NOT fall back to WebSearch |
+| Exa MCP not found in ToolSearch | Server not configured, API key missing, or MCP not connected | **STOP workflow.** Show Exa setup instructions. Do NOT fall back to WebSearch |
+| NotebookLM not found in ToolSearch | MCP not configured | **STOP workflow.** Show NotebookLM setup instructions |
 | NotebookLM auth expired | Token expired | Run `nlm login` via Bash (timeout 120s), then retry |
 | Source add fails for a URL | URL blocked or invalid | Log the URL, skip it, continue with remaining sources |
 | Source limit (50) hit | Too many sources | Create new notebook with next-tier name, continue adding |
