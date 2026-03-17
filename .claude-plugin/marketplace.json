@@ -1,0 +1,15 @@
+{
+  "name": "learn-toolkit-marketplace",
+  "owner": {
+    "name": "Yotam Fromm",
+    "email": "yodem@users.noreply.github.com"
+  },
+  "plugins": [
+    {
+      "name": "learn-toolkit",
+      "version": "1.0.0",
+      "description": "3-step learning toolkit: /visualize (ASCII diagrams), /playground (interactive HTML), /learn (deep research + NotebookLM)",
+      "source": "./"
+    }
+  ]
+}

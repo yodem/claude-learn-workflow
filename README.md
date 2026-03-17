@@ -4,31 +4,46 @@ A 3-skill toolkit for learning new technologies without leaving your workflow. E
 
 | Step | Skill | Environment | When to use |
 |------|-------|-------------|-------------|
-| 1 | `/visualize` | Terminal | Quick flowchart or architecture diagram, stay in CLI |
-| 2 | `/playground` | Browser (HTML) | Compare alternatives, explore parameters interactively |
-| 3 | `/learn` | Web / MCP | Deep learning with podcast, infographic, mind map, flashcards |
+| 1 | `/learn-toolkit:visualize` | Terminal | Quick flowchart or architecture diagram, stay in CLI |
+| 2 | `/learn-toolkit:playground` | Browser (HTML) | Compare alternatives, explore parameters interactively |
+| 3 | `/learn-toolkit:learn` | Web / MCP | Deep learning with podcast, infographic, mind map, flashcards |
 
-## Quick Install
+## Install
 
-Paste this repo URL into Claude Code and it sets everything up:
+### Option A: Plugin install (recommended)
 
 ```
-https://github.com/YOUR_USERNAME/claude-learn-workflow
+/plugin marketplace add yodem/claude-learn-workflow
+/plugin install learn-toolkit@learn-toolkit-marketplace
 ```
 
-Claude reads the `CLAUDE.md` and:
-1. Installs all 3 skills (`/visualize`, `/playground`, `/learn`)
-2. `/visualize` and `/playground` work immediately — no API keys needed
-3. Configures MCP servers with `${ENV_VAR}` references (no secrets in config files)
-4. Guides you to add API keys to your shell profile (you do this step yourself)
-5. Sets up NotebookLM (optional)
+This installs all 3 skills, configures MCP servers (via env vars), and handles updates automatically.
 
-> Works with any AI coding assistant that reads `CLAUDE.md` — Claude Code, Cursor, Windsurf, etc.
+Then add your API keys to `~/.zshrc` (or `~/.bashrc`):
 
-## Manual Setup
+```bash
+export TAVILY_API_KEY="your-key-here"   # https://tavily.com (free)
+export EXA_API_KEY="your-key-here"      # https://exa.ai
+```
+
+Restart Claude Code. Done.
+
+> `/learn-toolkit:visualize` and `/learn-toolkit:playground` work immediately — no API keys needed. Keys are only required for `/learn-toolkit:learn`'s search backends.
+
+### Option B: Paste repo URL
+
+Paste this URL into Claude Code and it reads `CLAUDE.md` to walk you through setup:
+
+```
+https://github.com/yodem/claude-learn-workflow
+```
+
+> Also works with Cursor, Windsurf, and other AI tools that read `CLAUDE.md`.
+
+### Option C: Manual setup
 
 <details>
-<summary>Click to expand manual setup steps</summary>
+<summary>Click to expand manual steps</summary>
 
 ### Prerequisites
 
@@ -92,50 +107,50 @@ claude
 
 ## The Three Skills
 
-### Step 1: `/visualize` — ASCII Diagrams in Terminal
+### Step 1: `/learn-toolkit:visualize` — ASCII Diagrams in Terminal
 
 ```
-/visualize <concept>
+/learn-toolkit:visualize <concept>
 ```
 
 Generates flowcharts, architecture diagrams, sequence diagrams, decision trees, and comparison tables directly in the terminal using Unicode box-drawing characters. No files created, no browser needed.
 
 ```
-/visualize user login flow
-/visualize microservices with API gateway
-/visualize REST vs GraphQL vs gRPC
+/learn-toolkit:visualize user login flow
+/learn-toolkit:visualize microservices with API gateway
+/learn-toolkit:visualize REST vs GraphQL vs gRPC
 ```
 
 **No API keys or MCP servers required.** Works immediately after install.
 
-### Step 2: `/playground` — Interactive HTML Explorer
+### Step 2: `/learn-toolkit:playground` — Interactive HTML Explorer
 
 ```
-/playground <topic>
+/learn-toolkit:playground <topic>
 ```
 
 Generates a standalone HTML file with interactive controls (sliders, toggles, tabs) for exploring parameters, comparing alternatives, and making decisions. Opens in your default browser.
 
 ```
-/playground PostgreSQL vs MongoDB vs Redis
-/playground REST API pagination strategies
-/playground monolith vs microservices for team of 5
+/learn-toolkit:playground PostgreSQL vs MongoDB vs Redis
+/learn-toolkit:playground REST API pagination strategies
+/learn-toolkit:playground monolith vs microservices for team of 5
 ```
 
 **No API keys or MCP servers required.** Works immediately after install.
 
-### Step 3: `/learn` — Deep Learning Package via NotebookLM
+### Step 3: `/learn-toolkit:learn` — Deep Learning Package via NotebookLM
 
 ```
-/learn <topic>
+/learn-toolkit:learn <topic>
 ```
 
 Researches a topic across Tavily, Exa, and web search in parallel, loads everything into NotebookLM, and generates a full learning package.
 
 ```
-/learn Kafka event streaming
-/learn Rust ownership and borrowing
-/learn Next.js App Router --language en
+/learn-toolkit:learn Kafka event streaming
+/learn-toolkit:learn Rust ownership and borrowing
+/learn-toolkit:learn Next.js App Router --language en
 ```
 
 **Requires API keys** for Tavily/Exa (optional — falls back to WebSearch) and NotebookLM MCP (optional — skips artifact generation without it).
@@ -270,7 +285,11 @@ Default: podcast + infographic + mind map + flashcards. Additional types availab
 
 ```
 claude-learn-workflow/
-├── CLAUDE.md                                 # AI reads this for automated setup
+├── .claude-plugin/
+│   ├── plugin.json                           # Plugin manifest (name, version, metadata)
+│   └── marketplace.json                      # Marketplace catalog for /plugin install
+├── .mcp.json                                 # MCP servers (Tavily, Exa) with ${ENV_VAR} refs
+├── CLAUDE.md                                 # AI reads this for paste-URL setup flow
 ├── README.md
 ├── LICENSE
 ├── skills/
@@ -284,9 +303,9 @@ claude-learn-workflow/
 │           ├── notebooklm-loading.md         # Notebook overflow logic
 │           └── artifact-generation.md        # NotebookLM tool signatures
 ├── commands/
-│   └── learn.md                              # Legacy command (alternative)
+│   └── learn.md                              # Legacy command (standalone fallback)
 └── examples/
-    └── settings-snippet.json                 # MCP config template
+    └── settings-snippet.json                 # MCP config template for manual setup
 ```
 
 ## License

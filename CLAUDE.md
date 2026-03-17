@@ -1,175 +1,101 @@
 # Setup Instructions for AI Assistants
 
-When a user shares this repository URL, your job is to install **three learning skills** and configure the required MCP servers. Follow these steps exactly.
+This repository is a **Claude Code plugin**. When a user shares this repo URL, guide them through the plugin install — do NOT manually copy skill files.
 
-## What gets installed
+## Quick install (preferred)
 
-This repo provides a 3-step learning toolkit for Claude Code:
+### Step 1: Add the marketplace and install the plugin
 
-| Skill | Purpose | Environment | When to use |
-|-------|---------|-------------|-------------|
-| `/visualize` | ASCII flowcharts, architecture diagrams, tables | Terminal | Quick concept, don't want to leave CLI |
-| `/playground` | Interactive HTML for comparing options, exploring parameters | Browser | Need to see alternatives, tweak settings |
-| `/learn` | Full research + NotebookLM learning package (podcast, infographic, mind map, flashcards) | Web / MCP | Deep learning, new tech, team materials |
+```
+/plugin marketplace add yodem/claude-learn-workflow
+/plugin install learn-toolkit@learn-toolkit-marketplace
+```
 
-## Step 1: Install all three skills
-
+Or via CLI:
 ```bash
-mkdir -p ~/.claude/skills/visualize
-mkdir -p ~/.claude/skills/playground
-mkdir -p ~/.claude/skills/learn/references
+claude plugin install learn-toolkit@learn-toolkit-marketplace
 ```
 
-Then copy these files from this repo using the Write tool (read each file from this repo first):
+This installs all 3 skills and configures MCP servers automatically:
+- `/learn-toolkit:visualize` — ASCII diagrams in terminal (no config needed)
+- `/learn-toolkit:playground` — Interactive HTML explorer (no config needed)
+- `/learn-toolkit:learn` — Tavily + Exa research into NotebookLM packages
 
-**Skill 1 — /visualize:**
-- `skills/visualize/SKILL.md` -> `~/.claude/skills/visualize/SKILL.md`
+### Step 2: Set up API keys for /learn (optional)
 
-**Skill 2 — /playground:**
-- `skills/playground/SKILL.md` -> `~/.claude/skills/playground/SKILL.md`
+The `/learn-toolkit:visualize` and `/learn-toolkit:playground` skills work immediately with no API keys.
 
-**Skill 3 — /learn:**
-- `skills/learn/SKILL.md` -> `~/.claude/skills/learn/SKILL.md`
-- `skills/learn/references/notebooklm-loading.md` -> `~/.claude/skills/learn/references/notebooklm-loading.md`
-- `skills/learn/references/artifact-generation.md` -> `~/.claude/skills/learn/references/artifact-generation.md`
+For `/learn-toolkit:learn`, the plugin's `.mcp.json` configures Tavily and Exa servers using environment variable references (`${TAVILY_API_KEY}`, `${EXA_API_KEY}`). The user needs to set these in their shell profile.
 
-## Step 2: Ask which search backends the user wants
+**SECURITY: NEVER ask the user to paste API keys in the chat.**
 
-The `/visualize` and `/playground` skills work with NO API keys — they use built-in tools only.
-
-The `/learn` skill benefits from search backends. Ask the user:
-
-1. **Tavily** — "Do you want to use Tavily for web search? (free key at https://tavily.com) — yes/no"
-2. **Exa** — "Do you want to use Exa for web + code search? (key at https://exa.ai) — yes/no"
-3. **NotebookLM MCP** — "Do you have the notebooklm-mcp server installed? If not, I'll skip it — `/learn` will still do research, it just won't generate podcasts/infographics."
-
-If the user doesn't want any search backends, still install all three skills. `/visualize` and `/playground` work immediately. `/learn` falls back to built-in WebSearch.
-
-## Step 3: Configure MCP servers with env var references (SECURITY CRITICAL)
-
-**NEVER ask the user to paste API keys into the chat.** Keys must never appear in conversation history, tool outputs, or config files.
-
-Instead, configure MCP servers using `${ENV_VAR}` references that Claude Code resolves at runtime.
-
-Read the user's `~/.claude/settings.json`. If it exists, merge the new MCP servers into the existing `mcpServers` object. If it doesn't exist, create it.
-
-**Add these entries — note the `${VAR}` placeholders, NOT literal keys:**
-
-```json
-{
-  "mcpServers": {
-    "tavily": {
-      "type": "url",
-      "url": "https://mcp.tavily.com/mcp/?tavilyApiKey=${TAVILY_API_KEY}"
-    },
-    "exa": {
-      "type": "url",
-      "url": "https://mcp.exa.ai/mcp?exaApiKey=${EXA_API_KEY}&tools=web_search_exa,web_search_advanced_exa,get_code_context_exa,crawling_exa,company_research_exa,people_search_exa,deep_researcher_start,deep_researcher_check"
-    }
-  }
-}
-```
-
-IMPORTANT:
-- Do NOT overwrite existing settings. Merge into the existing JSON structure.
-- Do NOT put actual API key values in the config. Use `${TAVILY_API_KEY}` and `${EXA_API_KEY}` exactly as shown.
-- Preserve all existing mcpServers, permissions, hooks, plugins, and other settings.
-
-## Step 4: Guide the user to set environment variables
-
-After writing the config, tell the user to add their API keys to their shell profile. Detect their shell first:
-
+Detect their shell:
 ```bash
 echo $SHELL
 ```
 
-Then provide the appropriate instructions:
-
-**For zsh (`~/.zshrc`):**
-```
-Add these lines to your ~/.zshrc (open it in your editor):
-
-export TAVILY_API_KEY="your-tavily-key-here"
-export EXA_API_KEY="your-exa-key-here"
-
-Then run: source ~/.zshrc
-```
-
-**For bash (`~/.bashrc` or `~/.bash_profile`):**
-```
-Add these lines to your ~/.bashrc:
-
-export TAVILY_API_KEY="your-tavily-key-here"
-export EXA_API_KEY="your-exa-key-here"
-
-Then run: source ~/.bashrc
-```
-
-CRITICAL SECURITY RULES:
-- Do NOT offer to write the API keys to the shell profile for the user. The user must do this themselves.
-- Do NOT ask the user to paste their key in the chat. Say: "Open your shell profile in your editor and add the export lines. Do not paste your key here."
-- If the user pastes an API key in the chat anyway, warn them: "For security, API keys should not be shared in chat. Please rotate this key at [provider URL] and set the new one in your shell profile."
-- When confirming setup, NEVER echo back or display any API key values. Only refer to them as `$TAVILY_API_KEY` / `$EXA_API_KEY`.
-
-## Step 5: NotebookLM setup (if user has it)
-
-If the user confirmed they have notebooklm-mcp:
-- Check if it's already in their MCP config
-- If not, ask how they installed it and help add the correct config entry
-- Run `nlm login` if they need to authenticate
-
-If the user doesn't have it:
-- Tell them: "NotebookLM MCP is optional. `/learn` will still research your topic — it just won't auto-generate podcasts, infographics, and flashcards. You can add it later from https://github.com/nicholasgriffintn/notebooklm-mcp"
-
-## Step 6: Confirm and instruct
-
-After setup, tell the user:
+Then tell them:
 
 ---
 
-Setup complete! Here's what was installed:
+The plugin is installed. To enable the `/learn-toolkit:learn` search backends, add your API keys to your shell profile.
 
-**3 skills installed to `~/.claude/skills/`:**
+**Open your shell profile in your editor** (`~/.zshrc` for zsh, `~/.bashrc` for bash) and add:
+
+```bash
+export TAVILY_API_KEY="your-tavily-key-here"    # Get one free at https://tavily.com
+export EXA_API_KEY="your-exa-key-here"          # Get one at https://exa.ai
+```
+
+Then run `source ~/.zshrc` (or `~/.bashrc`) and restart Claude Code.
+
+**Do not paste your API keys in this chat.** Add them directly to your shell profile.
+
+---
+
+If the user doesn't have API keys, that's fine — `/learn-toolkit:learn` falls back to built-in WebSearch. `/learn-toolkit:visualize` and `/learn-toolkit:playground` work with no keys at all.
+
+### Step 3: NotebookLM (optional)
+
+If the user wants podcast/infographic generation:
+- Check if they have `notebooklm-mcp` installed
+- If not: "NotebookLM is optional. `/learn-toolkit:learn` will still research your topic — it just won't generate podcasts, infographics, and flashcards. Add it later from https://github.com/nicholasgriffintn/notebooklm-mcp"
+
+### Step 4: Confirm
+
+Tell the user:
+
+---
+
+Plugin **learn-toolkit** installed. Here's what you have:
 
 | Skill | Command | Ready? |
 |-------|---------|--------|
-| ASCII Visualizer | `/visualize <concept>` | Yes (no config needed) |
-| Interactive Playground | `/playground <topic>` | Yes (no config needed) |
-| Deep Learning | `/learn <topic>` | [Yes/Partial — list which MCP servers were configured] |
+| ASCII Visualizer | `/learn-toolkit:visualize <concept>` | Yes |
+| Interactive Playground | `/learn-toolkit:playground <topic>` | Yes |
+| Deep Learning | `/learn-toolkit:learn <topic>` | After setting env vars + restart |
 
-**MCP servers configured** (using environment variable references — no keys in config files):
-- [list which ones were added, or "None — /visualize and /playground still work"]
-
-**Remaining step — you need to do this yourself:**
-1. Open your shell profile (`~/.zshrc` or `~/.bashrc`) in your editor
-2. Add your API key exports (see the lines printed above)
-3. Run `source ~/.zshrc` (or `~/.bashrc`)
-4. Restart Claude Code (`/exit` then relaunch)
-
-**Quick start — try these now (no restart needed):**
+**Try now (no restart needed):**
 ```
-/visualize microservices architecture
-/playground React vs Vue vs Svelte
+/learn-toolkit:visualize microservices architecture
+/learn-toolkit:playground React vs Vue vs Svelte
 ```
 
-**After setting env vars and restarting:**
+**After env vars + restart:**
 ```
-/learn Kafka event streaming
+/learn-toolkit:learn Kafka event streaming
 ```
 
 **When to use which:**
-- Quick concept, stay in terminal -> `/visualize`
-- Compare options, explore interactively -> `/playground`
-- Deep dive, new technology, team materials -> `/learn`
+- Quick concept, stay in terminal -> `/learn-toolkit:visualize`
+- Compare options, explore interactively -> `/learn-toolkit:playground`
+- Deep dive, new technology, team materials -> `/learn-toolkit:learn`
 
 ---
 
 ## Important notes for the AI assistant
 
 - **NEVER ask for, display, or log API key values.** Not in chat, not in tool calls, not in file contents.
-- Always read the user's existing settings.json before writing to it
-- Config files must contain `${ENV_VAR}` references, NEVER literal key values
 - If a user accidentally pastes a key, warn them to rotate it immediately
-- `/visualize` and `/playground` need NO configuration — install and they work immediately
-- If you cannot write to `~/.claude/` (permissions), suggest the user run the commands manually
-- If the user is using a different AI tool (not Claude Code), explain that these skills are designed for Claude Code's skill system but the workflow logic in SKILL.md can be adapted
+- The plugin bundles MCP configs via `.mcp.json` with `${ENV_VAR}` references — no manual settings.json editing needed
+- If the user's Claude Code version doesn't support plugins (< 1.0.33), fall back to manual skill installation using the files in `skills/`

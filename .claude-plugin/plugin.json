@@ -1,0 +1,13 @@
+{
+  "name": "learn-toolkit",
+  "version": "1.0.0",
+  "description": "3-step learning toolkit: /visualize (ASCII diagrams in terminal), /playground (interactive HTML explorer), /learn (Tavily + Exa research into NotebookLM learning packages)",
+  "author": {
+    "name": "Yotam Fromm",
+    "url": "https://github.com/yodem"
+  },
+  "homepage": "https://github.com/yodem/claude-learn-workflow",
+  "repository": "https://github.com/yodem/claude-learn-workflow",
+  "license": "MIT",
+  "keywords": ["learning", "visualization", "notebooklm", "tavily", "exa", "podcast", "flashcards", "ascii", "playground"]
+}
