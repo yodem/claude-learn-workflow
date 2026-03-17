@@ -2,7 +2,79 @@
 
 A Claude Code **skill** that chains **Tavily**, **Exa**, and **NotebookLM** into an automated learning pipeline. Give it a topic, get back a full learning package: podcast, infographic, mind map, and flashcards.
 
-Built following [Claude Code best practices](https://docs.anthropic.com/en/docs/claude-code) — proper skill structure with YAML frontmatter, progressive disclosure via `references/`, explicit error recovery, and graceful MCP fallbacks.
+## Quick Install
+
+Paste this repo URL into Claude Code and it will set everything up for you:
+
+```
+https://github.com/YOUR_USERNAME/claude-learn-workflow
+```
+
+Claude reads the `CLAUDE.md` in this repo and walks you through:
+1. Installing the `/learn` skill
+2. Asking for your Tavily and Exa API keys
+3. Configuring MCP servers in your settings
+4. Setting up NotebookLM (optional)
+
+That's it. After setup, restart Claude Code and run `/learn <topic>`.
+
+> Works with any AI coding assistant that reads `CLAUDE.md` — Claude Code, Cursor, Windsurf, etc.
+
+## Manual Setup
+
+<details>
+<summary>Click to expand manual setup steps</summary>
+
+### Prerequisites
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
+- API keys for:
+  - **Tavily** — [tavily.com](https://tavily.com)
+  - **Exa** — [exa.ai](https://exa.ai)
+  - **NotebookLM MCP** — `notebooklm-mcp` server (optional)
+
+### Step 1: Install the skill
+
+```bash
+mkdir -p ~/.claude/skills/learn/references
+cp skills/learn/SKILL.md ~/.claude/skills/learn/SKILL.md
+cp skills/learn/references/*.md ~/.claude/skills/learn/references/
+```
+
+### Step 2: Configure MCP servers
+
+Add to `~/.claude/settings.json` under `"mcpServers"`:
+
+```json
+{
+  "mcpServers": {
+    "tavily": {
+      "type": "url",
+      "url": "https://mcp.tavily.com/mcp/?tavilyApiKey=YOUR_TAVILY_API_KEY"
+    },
+    "exa": {
+      "type": "url",
+      "url": "https://mcp.exa.ai/mcp?exaApiKey=YOUR_EXA_API_KEY&tools=web_search_exa,web_search_advanced_exa,get_code_context_exa,crawling_exa,company_research_exa,people_search_exa,deep_researcher_start,deep_researcher_check"
+    }
+  }
+}
+```
+
+### Step 3: Install NotebookLM MCP (optional)
+
+```bash
+# See https://github.com/nicholasgriffintn/notebooklm-mcp
+nlm login
+```
+
+### Step 4: Restart Claude Code
+
+```bash
+/exit
+claude
+```
+
+</details>
 
 ## How It Works
 
@@ -36,57 +108,12 @@ NotebookLM allows up to **50 sources per notebook**. When the limit is reached, 
 | `[Topic] - Deep Dive` | Code examples, comparisons, advanced content |
 | `[Topic] - Community` | Blog posts, discussions, alternatives |
 
-## Setup
+## Advanced Setup Options
 
-### Prerequisites
+<details>
+<summary>MCP server scoping, env vars, and team sharing</summary>
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
-- API keys for:
-  - **Tavily** — [tavily.com](https://tavily.com)
-  - **Exa** — [exa.ai](https://exa.ai)
-  - **NotebookLM MCP** — `notebooklm-mcp` server (see Step 3)
-
-### Step 1: Install the skill
-
-Claude Code uses a **skills** system (`.claude/skills/<name>/SKILL.md`) with YAML frontmatter for discoverability. The older `commands/` directory also works but skills take precedence.
-
-```bash
-# Option A: Personal skill (available in all your projects)
-mkdir -p ~/.claude/skills/learn/references
-cp skills/learn/SKILL.md ~/.claude/skills/learn/SKILL.md
-cp skills/learn/references/*.md ~/.claude/skills/learn/references/
-
-# Option B: Project skill (available only in current project, committable)
-mkdir -p .claude/skills/learn/references
-cp skills/learn/SKILL.md .claude/skills/learn/SKILL.md
-cp skills/learn/references/*.md .claude/skills/learn/references/
-
-# Option C: Legacy command (still works, simpler but less discoverable)
-cp commands/learn.md ~/.claude/commands/learn.md
-```
-
-### Step 2: Configure MCP servers
-
-Add to `~/.claude/settings.json` under `"mcpServers"`:
-
-```json
-{
-  "mcpServers": {
-    "tavily": {
-      "type": "url",
-      "url": "https://mcp.tavily.com/mcp/?tavilyApiKey=YOUR_TAVILY_API_KEY"
-    },
-    "exa": {
-      "type": "url",
-      "url": "https://mcp.exa.ai/mcp?exaApiKey=YOUR_EXA_API_KEY&tools=web_search_exa,web_search_advanced_exa,get_code_context_exa,crawling_exa,company_research_exa,people_search_exa,deep_researcher_start,deep_researcher_check"
-    }
-  }
-}
-```
-
-Replace `YOUR_TAVILY_API_KEY` and `YOUR_EXA_API_KEY` with your actual keys.
-
-**MCP server scoping** (choose based on your needs):
+### MCP Server Scoping
 
 | Scope | Where | Use case |
 |-------|-------|----------|
@@ -96,7 +123,9 @@ Replace `YOUR_TAVILY_API_KEY` and `YOUR_EXA_API_KEY` with your actual keys.
 
 When servers share the same name across scopes, local wins over project, project wins over user.
 
-**Environment variable support**: `.mcp.json` supports `${VAR}` and `${VAR:-default}` syntax for API keys, so you can commit the config without hardcoding secrets:
+### Environment Variable Support
+
+`.mcp.json` supports `${VAR}` and `${VAR:-default}` syntax so you can commit configs without hardcoding secrets:
 
 ```json
 {
@@ -109,32 +138,11 @@ When servers share the same name across scopes, local wins over project, project
 }
 ```
 
-### Step 3: Install NotebookLM MCP
+### Team Sharing
 
-Install and authenticate the NotebookLM MCP server:
+To share the skill with your team, add it to your project's `.claude/skills/` directory and commit to git. Team members get the skill automatically without any setup.
 
-```bash
-# Install (see https://github.com/nicholasgriffintn/notebooklm-mcp)
-# Then authenticate:
-nlm login
-```
-
-### Step 4: Restart Claude Code
-
-MCP servers load at session start:
-
-```bash
-/exit
-claude
-```
-
-### Step 5: Verify
-
-```
-/learn React Server Components
-```
-
-You should see parallel research across Tavily and Exa, followed by NotebookLM notebook creation and artifact generation.
+</details>
 
 ## Usage
 
