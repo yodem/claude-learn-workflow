@@ -105,6 +105,32 @@ claude
 
 </details>
 
+## Tavily Agent Skills (recommended)
+
+Install Tavily's agent skills to give `/learn-toolkit:learn` a CLI-based fallback and add standalone search/extract/crawl/research capabilities:
+
+```bash
+npx skills add tavily-ai/skills --yes
+curl -fsSL https://cli.tavily.com/install.sh | bash
+tvly login    # opens browser for OAuth, or: tvly login --api-key tvly-YOUR_KEY
+```
+
+This installs 7 skills as slash commands:
+
+| Skill | Slash Command | CLI Command | Purpose |
+|-------|---------------|-------------|---------|
+| `tavily-search` | `/tavily-search` | `tvly search "query" --json` | Web search with LLM-optimized results |
+| `tavily-extract` | `/tavily-extract` | `tvly extract "url"` | Extract content from specific URLs |
+| `tavily-crawl` | `/tavily-crawl` | `tvly crawl "url" --output-dir ./docs/` | Crawl site sections to local markdown |
+| `tavily-map` | `/tavily-map` | `tvly map "url"` | Discover URLs on a domain |
+| `tavily-research` | `/tavily-research` | `tvly research "topic" --json` | Deep multi-source research with citations |
+| `tavily-cli` | `/tavily-cli` | `tvly --help` | Unified CLI reference |
+| `tavily-best-practices` | `/tavily-best-practices` | — | Integration patterns and guidance |
+
+**Workflow escalation:** search → extract → map → crawl → research
+
+**Integration with `/learn-toolkit:learn`:** The learn workflow auto-detects Tavily CLI alongside the MCP server. If MCP is available, it uses MCP for search and CLI skills for extract/crawl. If only the CLI is installed, skills handle all Tavily operations. Either path provides full Tavily coverage.
+
 ## The Three Skills
 
 ### Step 1: `/learn-toolkit:visualize` — ASCII Diagrams in Terminal
@@ -285,6 +311,15 @@ Default: podcast + infographic + mind map + flashcards. Additional types availab
 
 ```
 claude-learn-workflow/
+├── .agents/
+│   └── skills/                               # Tavily agent skills (recommended, via npx skills add)
+│       ├── tavily-search/                    # Web search
+│       ├── tavily-extract/                   # URL content extraction
+│       ├── tavily-crawl/                     # Site crawling
+│       ├── tavily-map/                       # URL discovery
+│       ├── tavily-research/                  # Deep research
+│       ├── tavily-cli/                       # CLI reference
+│       └── tavily-best-practices/            # Integration guidance
 ├── .claude-plugin/
 │   ├── plugin.json                           # Plugin manifest (name, version, metadata)
 │   └── marketplace.json                      # Marketplace catalog for /plugin install

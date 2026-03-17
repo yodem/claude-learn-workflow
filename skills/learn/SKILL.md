@@ -3,9 +3,10 @@ name: learn
 description: "Deep learning workflow: research a topic via Tavily + Exa, then generate a full NotebookLM learning package (podcast, infographic, mind map, flashcards). Use when the user wants to learn a new technology, framework, language, or concept in depth. Triggers: /learn, 'learn about', 'research and create', 'deep dive into', 'create a learning package'. Do NOT use for simple web searches or quick questions."
 argument-hint: "<topic>"
 disable-model-invocation: true
+allowed-tools: Bash(tvly *)
 metadata:
   author: Yotam Fromm
-  version: 1.2.0
+  version: 1.3.0
   mcp-server: tavily, exa, notebooklm-mcp
   category: learning
   tags: [research, notebooklm, tavily, exa, podcast, flashcards]
@@ -26,7 +27,31 @@ CRITICAL: Follow these steps in exact order. Each phase has a verification gate 
 
 **This phase is mandatory. Do NOT skip it.**
 
-Before any research, discover which search backends and NotebookLM tools are actually available in this session. Use `ToolSearch` to probe for each backend:
+Before any research, discover which search backends and NotebookLM tools are actually available in this session.
+
+#### Step 0a: Check for Tavily Skills and CLI
+
+First, check if the Tavily agent skills are installed (these provide `tvly` CLI access via `Skill()`):
+
+```bash
+tvly --version 2>/dev/null && echo "TAVILY_CLI=true" || echo "TAVILY_CLI=false"
+```
+
+If `tvly` is found, check auth status (no API call needed):
+```bash
+tvly --status 2>/dev/null && echo "TAVILY_CLI_AUTH=true" || echo "TAVILY_CLI_AUTH=false"
+```
+
+Set `HAS_TAVILY_SKILLS` = true only if both checks pass. When true, `tvly` commands are available directly (the `/learn` skill's `allowed-tools: Bash(tvly *)` grants permission). Available commands:
+- `tvly search` — web search with LLM-optimized results
+- `tvly extract` — extract content from specific URLs
+- `tvly crawl` — crawl websites to local markdown
+- `tvly map` — discover URLs on a domain
+- `tvly research` — deep AI-synthesized research with citations
+
+#### Step 0b: Check MCP backends
+
+Use `ToolSearch` to probe for each MCP backend:
 
 1. `ToolSearch(query="+tavily search")` — look for `mcp__tavily__tavily_search` and `mcp__tavily__tavily_extract`
 2. `ToolSearch(query="+exa search")` — look for `mcp__exa__web_search_exa` and `mcp__exa__crawling_exa`
@@ -35,23 +60,32 @@ Before any research, discover which search backends and NotebookLM tools are act
 Run all 3 searches in parallel.
 
 Set flags based on results:
-- `HAS_TAVILY` = true if `mcp__tavily__tavily_search` was found
+- `HAS_TAVILY_MCP` = true if `mcp__tavily__tavily_search` was found
+- `HAS_TAVILY_SKILLS` = true if `tvly` CLI is installed and authenticated (from Step 0a)
+- `HAS_TAVILY` = true if `HAS_TAVILY_MCP` OR `HAS_TAVILY_SKILLS` is true
 - `HAS_EXA` = true if `mcp__exa__web_search_exa` was found
 - `HAS_NOTEBOOKLM` = true if NotebookLM tools were found
 
 **Tell the user which backends are available:**
 
 ```
-Research backends: [Tavily ✓/✗] [Exa ✓/✗] [WebSearch ✓ (built-in)]
+Research backends: [Tavily MCP ✓/✗] [Tavily Skills/CLI ✓/✗] [Exa ✓/✗] [WebSearch ✓ (built-in)]
 NotebookLM: [✓/✗]
 ```
 
+**Tavily priority:** If both `HAS_TAVILY_MCP` and `HAS_TAVILY_SKILLS` are true, prefer MCP for search (richer metadata) but use Tavily skills for extract/crawl/research (better at bulk operations). If only skills/CLI are available, use them for all Tavily operations.
+
 **If ANY required backend is missing, STOP the workflow immediately.** Do NOT fall back to WebSearch. Do NOT proceed to Phase 1. Instead, show the user exactly what's missing and how to fix it:
 
-If Tavily is missing:
-> **Tavily is not connected.** This is likely because `TAVILY_API_KEY` is not set in your shell environment.
+If Tavily is missing (neither MCP nor CLI):
+> **Tavily is not connected.** You can set it up via either method:
 >
-> To fix:
+> **Option A: Tavily CLI (recommended)**
+> 1. `curl -fsSL https://cli.tavily.com/install.sh | bash`
+> 2. `tvly login` (opens browser) or `tvly login --api-key tvly-YOUR_KEY`
+> 3. Optionally install agent skills: `npx skills add tavily-ai/skills --yes`
+>
+> **Option B: Tavily MCP server**
 > 1. Get a free API key at https://tavily.com
 > 2. Add `export TAVILY_API_KEY="your-key-here"` to your `~/.zshrc` (or `~/.bashrc`)
 > 3. Run `source ~/.zshrc` and **restart Claude Code**
@@ -74,16 +108,25 @@ If NotebookLM is missing:
 After showing the missing tools, end with:
 > Run `/learn-toolkit:learn $ARGUMENTS` again after fixing the above.
 
-**Verification gate:** ALL three backends must be available: Tavily ✓, Exa ✓, NotebookLM ✓. If any are missing, the workflow STOPS here with setup instructions. Do NOT continue.
+**Verification gate:** ALL three backends must be available: Tavily ✓ (MCP or CLI), Exa ✓, NotebookLM ✓. If any are missing, the workflow STOPS here with setup instructions. Do NOT continue.
 
 ### Phase 1: Parallel Research
 
 Research **$ARGUMENTS** across all **available** backends simultaneously. Only use backends where the corresponding flag from Phase 0 is true.
 
-**If HAS_TAVILY:**
+**If HAS_TAVILY_MCP (preferred for search):**
 - `mcp__tavily__tavily_search(query="$ARGUMENTS", search_depth="advanced", include_raw_content=true)`
 - `mcp__tavily__tavily_search(query="$ARGUMENTS tutorial guide 2025 2026", search_depth="advanced", include_raw_content=true)`
 - After searches complete, extract top 3-5 most valuable URLs via `mcp__tavily__tavily_extract` if that tool is available
+
+**If HAS_TAVILY_SKILLS (fallback, or complement to MCP):**
+Use `tvly` CLI commands directly (permitted by this skill's `allowed-tools: Bash(tvly *)`):
+- `tvly search "$ARGUMENTS" --depth advanced --max-results 10 --include-raw-content --json`
+- `tvly search "$ARGUMENTS tutorial guide 2025 2026" --depth advanced --max-results 10 --json`
+- After searches, extract top URLs: `tvly extract "URL1" "URL2" "URL3" --json`
+- For comprehensive single-call research: `tvly research "$ARGUMENTS" --json` (multi-source synthesis with citations — can replace manual search+extract when only CLI is available)
+
+If both MCP and skills are available, use MCP for search and `tvly` CLI for extract/crawl/research (CLI is better at bulk operations).
 
 **If HAS_EXA:**
 - `mcp__exa__web_search_exa(query="$ARGUMENTS documentation")`
@@ -159,13 +202,13 @@ Present final summary to user:
 
 ## Examples
 
-### Example 1: All backends available
+### Example 1: All backends available (MCP)
 
 User says: `/learn Next.js App Router`
 
 Actions:
-1. Phase 0: ToolSearch finds Tavily ✓, Exa ✓, NotebookLM ✓
-2. Tavily searches for "Next.js App Router" and "Next.js App Router tutorial guide 2025 2026"
+1. Phase 0: `tvly --version` not found. ToolSearch finds Tavily MCP ✓, Exa ✓, NotebookLM ✓
+2. Tavily MCP searches for "Next.js App Router" and "Next.js App Router tutorial guide 2025 2026"
 3. Exa searches for "Next.js App Router documentation" and "Next.js App Router architecture patterns"
 4. Collects 23 unique URLs, deduplicates to 19
 5. Creates "Next.js App Router - Core Learning" notebook, adds all 19 URLs + research summary
@@ -174,18 +217,33 @@ Actions:
 
 Result: Learning package with 1 notebook, 19 sources, 4 artifacts
 
-### Example 2: Missing backends — workflow stops
+### Example 2: Tavily CLI only (no MCP)
+
+User says: `/learn Kafka event streaming` (Tavily MCP not configured, but `tvly` CLI installed)
+
+Actions:
+1. Phase 0: `tvly --version` found ✓, auth check passes ✓. ToolSearch finds Tavily MCP ✗, Exa ✓, NotebookLM ✓
+2. Status: Tavily CLI ✓, Exa ✓, NotebookLM ✓ — proceed
+3. `tvly search "Kafka event streaming" --depth advanced --max-results 10 --json`
+4. `tvly search "Kafka event streaming tutorial guide 2025 2026" --depth advanced --max-results 10 --json`
+5. Exa searches run in parallel
+6. `tvly extract` on top URLs for full content
+7. Continues to Phase 2+
+
+Result: Same quality output, using CLI instead of MCP for Tavily
+
+### Example 3: Missing backends — workflow stops
 
 User says: `/learn Kafka event streaming` (no Tavily/Exa configured)
 
 Actions:
-1. Phase 0: ToolSearch finds Tavily ✗, Exa ✗, NotebookLM ✓
-2. Workflow STOPS — displays setup instructions for Tavily and Exa
-3. User sets env vars, restarts Claude Code, runs `/learn-toolkit:learn Kafka event streaming` again
+1. Phase 0: `tvly` not found. ToolSearch finds Tavily MCP ✗, Exa ✗, NotebookLM ✓
+2. Workflow STOPS — displays setup instructions for Tavily (CLI or MCP) and Exa
+3. User installs `tvly` or sets env vars, restarts Claude Code, runs `/learn-toolkit:learn Kafka event streaming` again
 
 Result: No research performed. User gets clear fix instructions.
 
-### Example 3: Overflow to multiple notebooks
+### Example 4: Overflow to multiple notebooks
 
 User says: `/learn Kubernetes`
 
@@ -197,7 +255,7 @@ Actions:
 
 Result: Learning package with 2 notebooks, 65 sources, 8 artifacts
 
-### Example 4: Language override
+### Example 5: Language override
 
 User says: `/learn GraphQL federation --language en`
 
@@ -209,7 +267,8 @@ Result: English-language learning package
 
 | Error | Cause | Action |
 |-------|-------|--------|
-| Tavily MCP not found in ToolSearch | Server not configured, API key missing, or MCP not connected | **STOP workflow.** Show Tavily setup instructions. Do NOT fall back to WebSearch |
+| Tavily not found (neither MCP nor CLI) | Server not configured, CLI not installed, or API key missing | **STOP workflow.** Show Tavily setup instructions (CLI or MCP). Do NOT fall back to WebSearch |
+| Tavily CLI auth error (exit code 3) | `tvly` installed but not authenticated | Run `tvly login` or set `TAVILY_API_KEY` env var |
 | Exa MCP not found in ToolSearch | Server not configured, API key missing, or MCP not connected | **STOP workflow.** Show Exa setup instructions. Do NOT fall back to WebSearch |
 | NotebookLM not found in ToolSearch | MCP not configured | **STOP workflow.** Show NotebookLM setup instructions |
 | NotebookLM auth expired | Token expired | Run `nlm login` via Bash (timeout 120s), then retry |

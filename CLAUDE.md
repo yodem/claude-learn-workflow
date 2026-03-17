@@ -55,6 +55,31 @@ Then run `source ~/.zshrc` (or `~/.bashrc`) and restart Claude Code.
 
 If the user doesn't have API keys, that's fine — `/learn-toolkit:learn` falls back to built-in WebSearch. `/learn-toolkit:visualize` and `/learn-toolkit:playground` work with no keys at all.
 
+### Step 2b: Install Tavily Agent Skills (recommended)
+
+The Tavily agent skills give `/learn-toolkit:learn` a CLI-based fallback when the Tavily MCP server isn't available, and provide standalone `tvly` commands for direct web search, extraction, crawling, and research.
+
+**Install the skills and CLI:**
+
+```bash
+npx skills add tavily-ai/skills --yes
+curl -fsSL https://cli.tavily.com/install.sh | bash
+tvly login
+```
+
+The `tvly login` command opens a browser for OAuth, or use `tvly login --api-key` with the same key from Step 2.
+
+This installs 7 skills:
+- `/tavily-search` — LLM-optimized web search
+- `/tavily-extract` — Extract content from URLs
+- `/tavily-crawl` — Crawl websites to local markdown
+- `/tavily-map` — Discover URLs on a domain
+- `/tavily-research` — AI-synthesized deep research with citations
+- `/tavily-cli` — Unified CLI reference
+- `/tavily-best-practices` — Integration guidance
+
+**How it works with `/learn-toolkit:learn`:** The learn workflow auto-detects whether Tavily MCP or the Tavily CLI is available. If MCP is configured, it uses MCP for search and Tavily skills for extract/crawl. If only the CLI is installed, it uses the skills for everything. Either way, the user gets full Tavily coverage.
+
 ### Step 3: NotebookLM (optional)
 
 If the user wants podcast/infographic generation:
@@ -74,6 +99,7 @@ Plugin **learn-toolkit** installed. Here's what you have:
 | ASCII Visualizer | `/learn-toolkit:visualize <concept>` | Yes |
 | Interactive Playground | `/learn-toolkit:playground <topic>` | Yes |
 | Deep Learning | `/learn-toolkit:learn <topic>` | After setting env vars + restart |
+| Tavily Agent Skills | `/tavily-search`, `/tavily-research`, `tvly` CLI | After Step 2b (`npx skills add` + `tvly login`) |
 
 **Try now (no restart needed):**
 ```
@@ -86,10 +112,19 @@ Plugin **learn-toolkit** installed. Here's what you have:
 /learn-toolkit:learn Kafka event streaming
 ```
 
+**After Tavily skills install (Step 2b):**
+```
+/tavily-search "Claude Code plugins"
+/tavily-research "RAG architecture patterns"
+tvly crawl "https://docs.example.com" --output-dir ./docs/
+```
+
 **When to use which:**
 - Quick concept, stay in terminal -> `/learn-toolkit:visualize`
 - Compare options, explore interactively -> `/learn-toolkit:playground`
 - Deep dive, new technology, team materials -> `/learn-toolkit:learn`
+- Direct web search/extract/crawl -> `/tavily-search`, `/tavily-extract`, `/tavily-crawl`
+- Comprehensive research with citations -> `/tavily-research`
 
 ---
 
