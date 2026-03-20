@@ -5,7 +5,7 @@ argument-hint: "<concept or architecture to visualize>"
 disable-model-invocation: true
 metadata:
   author: Yotam Fromm
-  version: 1.0.0
+  version: 1.5.1
   category: visualization
   tags: [ascii, diagram, flowchart, terminal, cli]
 ---

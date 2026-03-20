@@ -5,7 +5,7 @@ argument-hint: "<topic to explore interactively>"
 disable-model-invocation: true
 metadata:
   author: Yotam Fromm
-  version: 1.0.0
+  version: 1.5.1
   category: visualization
   tags: [html, interactive, comparison, playground, browser]
 ---

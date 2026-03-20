@@ -45,14 +45,17 @@ https://github.com/yodem/learn-toolkit
 <details>
 <summary>Click to expand manual steps</summary>
 
-See [Prerequisites](#prerequisites) above for required API keys and tools.
+See [Prerequisites](#prerequisites) below for required API keys and tools.
 
-### Step 1: Install the skill
+### Step 1: Install the skills
 
 ```bash
-mkdir -p ~/.claude/skills/learn/references
-cp skills/learn/SKILL.md ~/.claude/skills/learn/SKILL.md
-cp skills/learn/references/*.md ~/.claude/skills/learn/references/
+# All 3 skills
+mkdir -p ~/.claude/skills/learn/references ~/.claude/skills/visualize ~/.claude/skills/playground
+cp plugins/learn-toolkit/skills/learn/SKILL.md ~/.claude/skills/learn/SKILL.md
+cp plugins/learn-toolkit/skills/learn/references/*.md ~/.claude/skills/learn/references/
+cp plugins/learn-toolkit/skills/visualize/SKILL.md ~/.claude/skills/visualize/SKILL.md
+cp plugins/learn-toolkit/skills/playground/SKILL.md ~/.claude/skills/playground/SKILL.md
 ```
 
 ### Step 2: Configure MCP servers
@@ -403,26 +406,32 @@ Default: podcast + infographic + mind map + flashcards + **study guide** (implem
 ## File Structure
 
 ```
-learn-toolkit/
+learn-toolkit/                                    # Repository root
 ├── .claude-plugin/
-│   ├── plugin.json                           # Plugin manifest (name, version, metadata)
-│   └── marketplace.json                      # Marketplace catalog for /plugin install
-├── .mcp.json                                 # MCP servers (Tavily, Exa) with ${ENV_VAR} refs
-├── CLAUDE.md                                 # AI reads this for paste-URL setup flow
+│   └── marketplace.json                          # Marketplace catalog for /plugin install
+├── CLAUDE.md                                     # AI reads this for paste-URL setup flow
 ├── README.md
 ├── LICENSE
-├── skills/
-│   ├── visualize/
-│   │   └── SKILL.md                          # Step 1: ASCII diagrams
-│   ├── playground/
-│   │   └── SKILL.md                          # Step 2: Interactive HTML
-│   └── learn/
-│       ├── SKILL.md                          # Step 3: Deep learning
-│       └── references/
-│           ├── notebooklm-loading.md         # Notebook overflow logic
-│           ├── artifact-generation.md        # NotebookLM tool signatures
-│           └── candlekeep-integration.md     # CandleKeep read/write reference
-└── .gitignore
+├── .gitignore
+├── skills-lock.json                              # Skill dependency lock file
+└── plugins/learn-toolkit/                        # The installable plugin
+    ├── .claude-plugin/
+    │   └── plugin.json                           # Plugin manifest (name, version, metadata)
+    ├── .mcp.json                                 # MCP servers (Tavily, Exa) with ${ENV_VAR} refs
+    ├── CLAUDE.md                                 # Plugin-level AI setup instructions
+    ├── README.md                                 # Plugin documentation
+    ├── LICENSE
+    └── skills/
+        ├── visualize/
+        │   └── SKILL.md                          # Step 1: ASCII diagrams
+        ├── playground/
+        │   └── SKILL.md                          # Step 2: Interactive HTML
+        └── learn/
+            ├── SKILL.md                          # Step 3: Deep learning
+            └── references/
+                ├── notebooklm-loading.md         # Notebook overflow logic
+                ├── artifact-generation.md        # NotebookLM tool signatures
+                └── candlekeep-integration.md     # CandleKeep read/write reference
 ```
 
 ## License
