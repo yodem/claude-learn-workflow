@@ -2,7 +2,7 @@
 name: learn-toolkit:learn
 description: "Deep Learning Workflow: Tavily + Exa research into NotebookLM learning package with CandleKeep library integration (podcast, infographic, flashcards). Use for deep dives into new technologies, frameworks, or concepts. Do NOT use for quick diagrams (use /learn-toolkit:visualize), interactive exploration (use /learn-toolkit:playground), or when neither Tavily nor Exa are configured."
 argument-hint: "<topic>"
-allowed-tools: Bash(tvly *), Bash(ck *), Bash(echo *), Bash(mkdir *), Bash(test *), Bash(cat *), Bash(cp *)
+allowed-tools: Write, Bash(tvly *), Bash(ck *), Bash(echo *), Bash(mkdir *), Bash(test *), Bash(cat *), Bash(cp *)
 metadata:
   author: Yotam Fromm
   version: 1.5.1
