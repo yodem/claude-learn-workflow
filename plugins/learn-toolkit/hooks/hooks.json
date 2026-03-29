@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/yotamfromm/dev/claude-learn-workflow/plugins/learn-toolkit/hooks/validate-output.sh",
+            "statusMessage": "Validating learn-toolkit output structure..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/yotamfromm/dev/claude-learn-workflow/plugins/learn-toolkit/hooks/verify-artifacts.sh",
+            "statusMessage": "Verifying learn-toolkit artifacts were generated..."
+          }
+        ]
+      }
+    ]
+  }
+}
