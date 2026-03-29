@@ -1,9 +1,8 @@
 ---
 name: learn-toolkit:learn
-description: "Deep Learning Workflow: Tavily + Exa research into NotebookLM learning package with CandleKeep library integration (podcast, infographic, flashcards). Use for deep dives into new technologies, frameworks, or concepts."
+description: "Deep Learning Workflow: Tavily + Exa research into NotebookLM learning package with CandleKeep library integration (podcast, infographic, flashcards). Use for deep dives into new technologies, frameworks, or concepts. Do NOT use for quick diagrams (use /learn-toolkit:visualize), interactive exploration (use /learn-toolkit:playground), or when neither Tavily nor Exa are configured."
 argument-hint: "<topic>"
-disable-model-invocation: true
-allowed-tools: Bash(tvly *), Bash(ck *)
+allowed-tools: Write, Bash(tvly *), Bash(ck *), Bash(echo *), Bash(mkdir *), Bash(test *), Bash(cat *), Bash(cp *)
 metadata:
   author: Yotam Fromm
   version: 1.5.1
@@ -100,12 +99,22 @@ If Tavily is missing (neither MCP nor CLI):
 >
 > **Do not paste your API key in this chat.**
 
-If Exa is missing:
-> **Exa is not connected.** This is likely because `EXA_API_KEY` is not set in your shell environment.
+If Exa is missing, first check if the key is already set in the environment:
+```bash
+[ -n "$EXA_API_KEY" ] && echo "EXA_KEY_SET=true" || echo "EXA_KEY_SET=false"
+```
+
+If `EXA_KEY_SET=true` (key is set but MCP not loaded):
+> **Exa API key is set, but the Exa MCP server is not loaded in this session.**
+>
+> This happens when the key was added to `~/.zshrc` after Claude Code was started. Simply **restart Claude Code** and run the command again — no other changes needed.
+
+If `EXA_KEY_SET=false` (key not set):
+> **Exa is not connected.** Your `EXA_API_KEY` is not set in your shell environment.
 >
 > To fix:
 > 1. Get an API key at https://exa.ai
-> 2. Add `export EXA_API_KEY="your-key-here"` to your `~/.zshrc` (or `~/.bashrc`)
+> 2. Open `~/.zshrc` (or `~/.bashrc`) in your editor and add: `export EXA_API_KEY="your-key-here"`
 > 3. Run `source ~/.zshrc` and **restart Claude Code**
 >
 > **Do not paste your API key in this chat.**
@@ -116,7 +125,9 @@ If NotebookLM is missing:
 After showing the missing tools, end with:
 > Run `/learn-toolkit:learn $ARGUMENTS` again after fixing the above.
 
-**Verification gate:** ALL three backends must be available: Tavily ✓ (MCP or CLI), Exa ✓, NotebookLM ✓. If any are missing, the workflow STOPS here with setup instructions. Do NOT continue.
+**Verification gate:** At least ONE search backend must be available: Tavily ✓ (MCP or CLI) OR Exa ✓. If both search backends are missing, the workflow STOPS here with setup instructions. Do NOT continue.
+
+NotebookLM is **recommended but optional** — if missing, warn the user ("NotebookLM not found — skipping notebook creation and artifact generation. Research and local files will still be saved.") and continue in degraded mode (Phases 3–5 and 6b skip). Phase 6a (ASCII diagram) and local file saving always run.
 
 ### Phase 0.5: CandleKeep Library Scan
 
@@ -422,7 +433,7 @@ Result: English-language learning package
 |-------|-------|--------|
 | Tavily not found (neither MCP nor CLI) | Server not configured, CLI not installed, or API key missing | **STOP workflow.** Show Tavily setup instructions (CLI or MCP). Do NOT fall back to WebSearch |
 | Tavily CLI auth error (exit code 3) | `tvly` installed but not authenticated | Run `tvly login` or set `TAVILY_API_KEY` env var |
-| Exa MCP not found in ToolSearch | Server not configured, API key missing, or MCP not connected | **STOP workflow.** Show Exa setup instructions. Do NOT fall back to WebSearch |
+| Exa MCP not found in ToolSearch | Key not set, or key set after Claude Code started (MCP not loaded) | **STOP workflow.** Check `$EXA_API_KEY` env var first: if set → tell user to restart Claude Code; if not set → show Exa setup instructions. Do NOT fall back to WebSearch |
 | NotebookLM not found in ToolSearch | MCP not configured | **STOP workflow.** Show NotebookLM setup instructions |
 | NotebookLM auth expired | Token expired | Run `nlm login` via Bash (timeout 120s), then retry |
 | Source add fails for a URL | URL blocked or invalid | Log the URL, skip it, continue with remaining sources |

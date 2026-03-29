@@ -3,6 +3,7 @@ name: learn-toolkit:playground
 description: "Interactive playground: generates a standalone HTML page for exploring parameters, comparing alternatives, and experimenting with options in real-time in the browser. Use when the user wants to see alternatives side-by-side, tweak parameters interactively, or needs a visual comparison that's too complex for terminal ASCII. Triggers: /learn-toolkit:playground, 'compare options', 'interactive', 'show me alternatives', 'let me play with', 'explore parameters', 'side by side'. Do NOT use for simple diagrams (use /learn-toolkit:visualize) or deep learning (use /learn-toolkit:learn)."
 argument-hint: "<topic to explore interactively>"
 disable-model-invocation: true
+allowed-tools: Write, WebSearch, Grep, Glob, Bash(open *), Bash(xdg-open *), Bash(test *)
 metadata:
   author: Yotam Fromm
   version: 1.5.1

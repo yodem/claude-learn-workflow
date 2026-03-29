@@ -3,6 +3,7 @@ name: learn-toolkit:visualize
 description: "ASCII visualizer: generate flowcharts, architecture diagrams, sequence diagrams, and decision trees directly in the terminal using ASCII/Unicode box-drawing characters. Use when the user wants to visualize a concept, architecture, flow, or relationship without leaving the CLI. Triggers: /learn-toolkit:visualize, 'draw me', 'diagram', 'flowchart', 'ascii art', 'visualize', 'show me the architecture', 'map this out'. Do NOT use for complex multi-page visualizations (use /learn-toolkit:playground instead)."
 argument-hint: "<concept or architecture to visualize>"
 disable-model-invocation: true
+allowed-tools: WebSearch, Grep, Glob
 metadata:
   author: Yotam Fromm
   version: 1.5.1

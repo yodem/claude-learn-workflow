@@ -10,5 +10,21 @@
   "repository": "https://github.com/yodem/learn-toolkit",
   "license": "MIT",
   "keywords": ["learning", "visualization", "notebooklm", "tavily", "exa", "podcast", "flashcards", "ascii", "playground"],
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "hooks": "./hooks/",
+  "mcp": "../.mcp.json",
+  "requiredEnvVars": [
+    {
+      "name": "TAVILY_API_KEY",
+      "description": "Tavily API key for web search and content extraction. Get one free at https://tavily.com",
+      "required": false,
+      "usedBy": ["/learn-toolkit:learn"]
+    },
+    {
+      "name": "EXA_API_KEY",
+      "description": "Exa API key for semantic web search. Get one at https://exa.ai",
+      "required": false,
+      "usedBy": ["/learn-toolkit:learn"]
+    }
+  ]
 }
